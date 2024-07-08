@@ -59,7 +59,7 @@ articles css = f css Nothing
 
 main = do
     css <- getContents >>= return . lines
-    mapM_ print $ articles css
+    print $ articles css
 
     print "done."
 

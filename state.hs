@@ -3,21 +3,21 @@
 import Debug.Trace
 import Control.Applicative
 
-data MyState s a = NewMyState { runState :: s -> (a, s) }
+data MyState s a = GenMyState { runState :: s -> (a, s) }
 
 
 instance Monad (MyState s) where
 
-    return x = NewMyState $ \s -> (x, s)        -- クロージャの生成
+    return x = GenMyState $ \s -> (x, s)        -- クロージャの生成
 
-    (NewMyState h) >>= f = NewMyState $ \s ->
+    (GenMyState h) >>= f = GenMyState $ \s ->
         let (a, newState)  = h s                -- 値と状態を取り出す
-            (NewMyState g) = f a                -- クロージャを取り出す
+            (GenMyState g) = f a                -- クロージャを取り出す
             in g newState                       -- クロージャを新しい状態で実行
 
 
-push x = NewMyState $ \s -> ((), (x:s))
-pop    = NewMyState $ \(x:s) -> (x, s)
+push x = GenMyState $ \s -> ((), (x:s))
+pop    = GenMyState $ \(x:s) -> (x, s)
 
 
 f = runState (return 5 >>= push . (+2) ) [10..15]

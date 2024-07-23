@@ -13,3 +13,14 @@ g = foldr g' (return []) nss
 h = foldr h' (return []) nss
     where
         h' xs acc = concatMap ( \a -> concatMap (\b -> return (a:b)) acc ) xs
+
+
+i = do
+    a <- [1,2]
+    b <- [3,4]
+    c <- [5,6]
+    return [a,b,c]
+
+j = [1,2] >>= \a -> [3,4] >>= \b -> [5,6] >>= \c -> return [a,b,c]
+
+k = concatMap (\a -> concatMap (\b -> concatMap (\c -> return [a,b,c]) [5,6]) [3,4]) [1,2]

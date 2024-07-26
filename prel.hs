@@ -79,6 +79,12 @@ foldl f acc [] = acc
 foldl f acc (x:xs) = foldl f (f acc x) xs
 
 foldr1 f (x:xs) = foldr f x xs
+foldl1 f (x:xs) = foldl f x xs
+
+scanr f acc [] = [acc]
+scanr f acc (x:xs) = f x y : ys
+    where
+        ys@(y:_) = scanr f acc xs
 
 
 flip f a b = f b a

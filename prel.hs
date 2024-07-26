@@ -1,4 +1,6 @@
 
+import Data.List ()
+
 import Prelude hiding (
     map, (++), concat, filter,
     head, last, tail, init, null, length, (!!),
@@ -76,6 +78,7 @@ foldr f acc (x:xs) = f x (foldr f acc xs)
 foldl f acc [] = acc
 foldl f acc (x:xs) = foldl f (f acc x) xs
 
+foldr1 f (x:xs) = foldr f x xs
 
 
 flip f a b = f b a

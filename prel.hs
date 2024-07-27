@@ -86,6 +86,15 @@ scanr f acc (x:xs) = f x y : ys
     where
         ys@(y:_) = scanr f acc xs
 
+scanl f acc [] = [acc]
+scanl f acc (x:xs) = acc : scanl f (f acc x) xs
+
+scanr1 f [x] = [x]
+scanr1 f (x:xs) = f x y : ys
+    where
+        ys@(y:_) = scanr1 f xs
+
+scanl1 f (x:xs) = scanl f x xs
 
 flip f a b = f b a
 
@@ -94,3 +103,23 @@ subtract = flip (-)
 even x = (x `div` 2 == 0)
 odd x = not . even
 
+take 0 _ = []
+take n (x:xs) = x : take (n-1) xs
+
+iterate f x = x : iterate f (f x)
+
+repeat x = xs where xs = x : xs
+
+num = f 0
+    where
+        f x = x : f (x + 1)
+
+
+
+
+
+
+
+
+
+-- EOF

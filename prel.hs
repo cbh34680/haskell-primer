@@ -100,20 +100,102 @@ flip f a b = f b a
 
 subtract = flip (-)
 
-even x = (x `div` 2 == 0)
-odd x = not . even
+{-
+even x = (x `mod` 2 == 0)
+odd = not . even
+-}
 
-take 0 _ = []
-take n (x:xs) = x : take (n-1) xs
+even 0 = True
+even n = odd (n - 1)
+
+odd 0 = False
+odd n = even (n - 1)
+
 
 iterate f x = x : iterate f (f x)
 
 repeat x = xs where xs = x : xs
 
-num = f 0
+num' = f 0
     where
         f x = x : f (x + 1)
 
+elem :: Eq a => a -> [a] -> Bool
+_ `elem` [] = False
+x `elem` (y:ys)
+    | x == y = True
+    | otherwise = x `elem` ys
+
+isSpace :: Char -> Bool
+isSpace c = c `elem` " \t\n\r"
+
+replicate n x = [ x | _ <- [1 .. n] ]
+
+cycle xs = xs ++ cycle xs
+
+take 0 _ = []
+take n (x:xs) = x : take (n-1) xs
+
+drop 0 xs = xs
+drop n (x:xs) = drop (n-1) xs
+
+splitAt 0 xs = ([], xs)
+splitAt n (x:xs) = (x:ys, zs)
+    where
+        (ys, zs) = splitAt (n-1) xs
+
+takeWhile _ [] = []
+takeWhile p (x:xs)
+    | p x = x : takeWhile p xs
+    | otherwise = []
+
+dropWhile _ [] = []
+dropWhile p xs'@(x:xs)
+    | p x = dropWhile p xs
+    | otherwise = xs'
+
+break _ [] = ([], [])
+break p xs'@(x:xs)
+    | p x = ([], xs')
+    | otherwise = (x:ys, zs)
+        where
+            (ys, zs) = break p xs
+
+span p xs = break (not . p) xs
+
+{-
+lines [] = []
+
+lines cs = 
+    let
+        (cs', rest) = break (== '\n') $ dropWhile (== '\n') cs
+        in
+            if cs' == "" then [] else cs' : (lines rest)
+lines cs =
+    case cs' of
+        "" -> []
+        _  -> cs' : lines rest
+    where
+        (cs', rest) = break (== '\n') $ dropWhile (== '\n') cs
+
+words cs =
+    case cs' of
+        "" -> []
+        _  -> cs' : words rest
+    where
+        (cs', rest) = break isSpace $ dropWhile isSpace cs
+-}
+
+splitBy' :: (Char -> Bool) -> String -> [String]
+splitBy' p cs =
+    case cs' of
+        "" -> []
+        _  -> cs' : splitBy' p rest
+    where
+        (cs', rest) = break p $ dropWhile p cs
+
+lines = splitBy' (== '\n')
+words = splitBy' isSpace
 
 
 

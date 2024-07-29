@@ -22,11 +22,13 @@ import Prelude hiding (
     subtract, even, odd, gcd, lcm, (^), (^^),
     fromIntegral, realToFrac,
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
-    asTypeOf, error, undefined,
+    asTypeOf, undefined,
     seq, ($!)
     )
 
 otherwise = True
+
+undefined = error "\nProgram error: undefined\n"
 
 not True = False
 not _ = True
@@ -126,8 +128,24 @@ x `elem` (y:ys)
     | x == y = True
     | otherwise = x `elem` ys
 
-isSpace :: Char -> Bool
-isSpace c = c `elem` " \t\n\r"
+(||) :: Bool -> Bool -> Bool
+False || x = x
+_     || _ = True
+
+(&&) :: Bool -> Bool -> Bool
+True && x = x
+_    && _ = False
+
+
+isSpace = (`elem` " \t\n\r")
+
+isAlpha = (`elem` (['A'..'Z'] ++ ['a'..'z']))
+
+isNumber = (`elem` ['0'..'9'])
+
+isAlphaNum c
+    | isAlpha c || isNumber c = True
+    | otherwise = False
 
 replicate n x = [ x | _ <- [1 .. n] ]
 
@@ -196,6 +214,26 @@ splitBy' p cs =
 
 lines = splitBy' (== '\n')
 words = splitBy' isSpace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

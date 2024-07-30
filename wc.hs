@@ -3,28 +3,27 @@ import Data.Char
 wordsCount = outWord
 
 outWord [] = 0
-outWord (x:xs)
-    | isSpace x = outWord xs
-    | otherwise = 1 + inWord xs
+outWord (c:cs)
+    | isAlphaNum c = 1 + inWord  cs
+    | otherwise    =     outWord cs
 
 inWord [] = 0
-inWord (x:xs)
-    | isSpace x = outWord xs
-    | otherwise = inWord xs
+inWord (c:cs)
+    | isAlphaNum c =     inWord  cs
+    | otherwise    =     outWord cs
 
 
-linesCount = outLine
 
-outLine [] = 0
-outLine (x:xs)
-    | x == '\n' = outLine xs
-    | otherwise = 1 + inLine xs
+wordsCount' = outWord'
 
-inLine [] = 0
-inLine (x:xs)
-    | x == '\n' = outLine xs
-    | otherwise = inLine xs
+wordScan _ [] = 0
+wordScan f (c:cs)
+    | isAlphaNum c = f (inWord' cs)
+    | otherwise    = outWord' cs
 
+
+inWord'  cs = wordScan id   cs
+outWord' cs = wordScan (+1) cs
 
 
 

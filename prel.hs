@@ -1,4 +1,5 @@
 
+import qualified Debug.Trace as T
 import Data.List ()
 
 import Prelude hiding (
@@ -36,6 +37,7 @@ not _ = True
 (.) f g x = f (g x)
 ($) f x = f x
 
+const :: a -> b -> a
 const a b = a
 
 map _ [] = []
@@ -128,6 +130,8 @@ x `elem` (y:ys)
     | x == y = True
     | otherwise = x `elem` ys
 
+notElem x = not . elem x
+
 (||) :: Bool -> Bool -> Bool
 False || x = x
 _     || _ = True
@@ -215,19 +219,271 @@ splitBy' p cs =
 lines = splitBy' (== '\n')
 words = splitBy' isSpace
 
+unlines :: [String] -> String
+
+unlines = concat . map (++ "\n")
+
+unwords [] = []
+unwords (cs:css) = foldl (\acc xs -> acc ++ " " ++ xs) cs css
+
+
+reverse :: [a] -> [a]
+reverse = foldl (flip (:)) []
+
+and = foldr (&&) True
+or = foldr (||) False
+
+any f = or . (map f)
+all f = and . (map f)
+
+
+
+lookup _ [] = Nothing
+lookup x ((k,w):rest)
+    | x == k = Just w
+    | otherwise = lookup x rest
+
+
+sum = foldr (+) 0
+product = foldr (*) 1
+
+maximum [x] = x
+maximum (x:xs) = max x $ maximum xs
+
+minimum [x] = x
+minimum (x:xs) = min x $ minimum xs
+
+concatMap f = concat . (map f)
+
+
+zip [] _  = []
+zip _  [] = []
+zip (x:xs) (y:ys) = (x,y) : zip xs ys
+
+zip3 [] _  _  = []
+zip3 _  [] _  = []
+zip3 _  _  [] = []
+zip3 (x:xs) (y:ys) (z:zs) = (x,y,z) : zip3 xs ys zs
+
+
+isUpper = (`elem` ['A'..'Z'])
+isLower = (`elem` ['a'..'z'])
+isDigit = (`elem` ['0'..'9'])
+
+
+sequence [] = return []
+sequence (x:xs) = do
+    y <- x
+    ys <- sequence xs
+    return (y:ys)
+
+
+mapM _ [] = return []
+mapM f (x:xs) = do
+    y <- f x
+    ys <- mapM f xs
+    return (y:ys)
+
+
+{-
+mapM_ _ [] = return ()
+mapM_ f (x:xs) = do
+    f x
+    mapM_ f xs
+-}
+mapM_ f = foldr (\x acc -> f x >> acc) (return ())
+
+{-
+sequence_ [] = return ()
+sequence_ (x:xs) = do
+    x
+    sequence_ xs
+-}
+sequence_ :: Monad m => [m a] -> m ()
+sequence_ = foldr (\x acc -> x >> acc) (return ())
+
+
+n ^ 0 = 1
+n ^ m = n * (n ^ (m - 1))
+
+
+until p f x
+    | p x = x
+    | otherwise = until p f (f x)
+
+id x = x
+
+fst (x, _) = x
+snd (_, x) = x
+
+curry f a b = f (a, b)
+uncurry f (a,b) = f a b
+
+
+asTypeOf :: a -> a -> a
+asTypeOf = const
+
+
+intersperse :: a -> [a] -> [a]
+
+intersperse _ [] = []
+intersperse _ [x] = [x]
+intersperse x (y:ys) = y : x : intersperse x ys
+
+
+transpose = undefined
+
+
+group :: Eq a => [a] -> [[a]]
+{-
+group = f []
+    where
+        f ys [] = [ys]
+
+        f [] (x:xs) = f [x] xs
+
+        f ys@(y:_) (x:xs)
+            | x == y = f (x:ys) xs
+            | otherwise = ys : f [x] xs
+-}
+
+group [] = []
+group [x] = [[x]]
+group (x:xs) = (x:ys) : group zs
+    where
+        (ys, zs) = span (== x) xs
+
+
+
+inits :: [a] -> [[a]]
+
+{-
+inits xs = reverse $ f xs
+    where
+        f [] = []
+        f ys = init ys : f (init ys)
+-}
+
+inits [] = [[]]
+inits (x:xs) = [[]] ++ map (x:) (inits xs)
+
+
+
+tails [] = [[]]
+tails xxs@(_:xs) = xxs : tails xs
+
+
+isPrefixOf [] [] = True
+isPrefixOf [] _  = True
+isPrefixOf _  [] = False
+
+isPrefixOf (x:xs) (y:ys)
+    | x == y = isPrefixOf xs ys
+    | otherwise = False
+
+
+
+isSuffixOf [] [] = True
+isSuffixOf [] _  = False
+isSuffixOf _  [] = False
+
+isSuffixOf xxs@(x:xs) yys@(y:ys)
+    | lx >  ly = False
+    | lx <  ly = isSuffixOf xxs ys
+    | (lx == ly) && (x == y) = isSuffixOf xs ys
+    | otherwise = False
+    where
+        lx = length xxs
+        ly = length yys
+
+-- isInfixOf xs = or . map (xs `isPrefixOf`) . tails
+isInfixOf xs = any (xs `isPrefixOf`) . tails
+
+
+find _ [] = Nothing
+find p (x:xs)
+    | p x = Just x
+    | otherwise = find p xs
+
+
+
+partition _ [] = ([], [])
+partition p (x:xs)
+    | p x = (x:ys, zs)
+    | otherwise = (ys, x:zs)
+    where
+        (ys, zs) = partition p xs
+
+
+elemIndex x xs = lookup x $ zip xs [0..]
+
+{-
+lookups' _ [] = []
+lookups' x ((k,w):rest)
+    | x == k = w : lookups' x rest
+    | otherwise = lookups' x rest
+
+elemIndices x xs = lookups' x $ zip xs [0..]
+
+
+
+elemIndices x xs = [ b | (a,b) <- zip xs [0..], x == a ]
+-}
+
+
+elemIndices x xs = findIndices (== x) xs
+
+findIndex p xs = case findIndices p xs of
+    [] -> Nothing
+    ys -> Just ys
+
+findIndices p xs = [ b | (a,b) <- zip xs [0..], p a ]
+
+
+zipWith _ [] _  = []
+zipWith _ _  [] = []
+zipWith p (x:xs) (y:ys) = p x y : zipWith p xs ys
+
+
+
+nub :: Eq a => [a] -> [a]
+{-
+nub = reverse . foldl (\acc x -> if x `elem` acc then acc else x:acc) []
+-}
+
+nub ys = f [] ys
+    where
+        f _ [] = []
+        f acc (x:xs)
+            | x `elem` acc = f acc xs
+            | otherwise = x : f (x:acc) xs
+
+safe_head' [] = []
+safe_head' xs = head xs
+
+safe_tail' [] = []
+safe_tail' xs = tail xs
+
+delete x xs = ys ++ safe_tail' zs
+    where
+        (ys, zs) = break (== x) xs
+
+
+[] \\ _  = []
+xs \\ [] = xs
+
+(x:xs) \\ ys
+    | x `elem` ys = xs \\ ys
+    | otherwise = x: xs \\ ys
 
 
 
 
+union xs [] = xs
 
-
-
-
-
-
-
-
-
+union xs (y:ys)
+    | y `elem` xs = union xs ys
+    | otherwise = union (xs ++ [y]) ys
 
 
 

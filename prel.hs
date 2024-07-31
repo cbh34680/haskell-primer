@@ -407,12 +407,20 @@ find p (x:xs)
 
 
 
+{-
 partition _ [] = ([], [])
 partition p (x:xs)
     | p x = (x:ys, zs)
     | otherwise = (ys, x:zs)
     where
         (ys, zs) = partition p xs
+-}
+
+partition p = foldr f ([], [])
+    where
+        f x (ls, rs)
+            | p x = (x:ls, rs)
+            | otherwise = (ls, x:rs)
 
 
 elemIndex x xs = lookup x $ zip xs [0..]
@@ -471,19 +479,68 @@ delete x xs = ys ++ safe_tail' zs
 
 [] \\ _  = []
 xs \\ [] = xs
-
 (x:xs) \\ ys
     | x `elem` ys = xs \\ ys
     | otherwise = x: xs \\ ys
 
 
 
-
 union xs [] = xs
-
 union xs (y:ys)
     | y `elem` xs = union xs ys
     | otherwise = union (xs ++ [y]) ys
+
+
+
+insert :: Ord a => a -> [a] -> [a]
+insert _ [] = []
+insert x (y:ys)
+    | y < x = y : insert x ys
+    | otherwise = x : y : ys
+
+
+
+groupBy _ [] = []
+groupBy p (x:xs) = (x:ys) : groupBy p zs
+    where
+        (ys, zs) = span (p x) xs
+
+
+grouping' _ [] = []
+
+grouping' p xs = ys : grouping' p zs
+    where
+        (ys, zs) = f xs (tail xs)
+
+        f ys [] = (ys, [])
+
+        f (y:ys) (z:zs)
+            | p y z = ((y:ys'), zs')
+            | otherwise = ([y], ys)
+            where
+                (ys', zs') = f ys zs
+
+
+
+{-
+-- [1,2] %>> [[3,4], [5,6]] --->> [[1,3,4], [2,5,6]]
+
+(%>>) :: [a] -> [[a]] -> [[a]]
+ls %>> rss = map (\(x,xs) -> x:xs) $ zip ls rss
+f xss@(xs:_) = foldr (%>>) (replicate (length xs) []) xss
+-}
+
+
+intersect xs ys = [ x | x <- xs, any (== x) ys ]
+
+
+
+
+
+
+
+
+
 
 
 

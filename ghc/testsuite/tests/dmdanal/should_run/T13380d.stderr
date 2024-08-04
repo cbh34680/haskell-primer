@@ -1,0 +1,7 @@
+T13380d: Exception:
+
+user error (What)
+
+Package: ghc-internal
+Module: GHC.Internal.IO.Exception
+Type: IOException

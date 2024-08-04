@@ -1,0 +1,7 @@
+conc040: Exception:
+
+timeout
+
+Package: ghc-internal
+Module: GHC.Internal.Exception
+Type: ErrorCall

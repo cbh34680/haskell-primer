@@ -1,0 +1,7 @@
+conc031: Exception:
+
+thread blocked indefinitely in an MVar operation
+
+Package: ghc-internal
+Module: GHC.Internal.IO.Exception
+Type: BlockedIndefinitelyOnMVar

@@ -534,7 +534,17 @@ f xss@(xs:_) = foldr (%>>) (replicate (length xs) []) xss
 intersect xs ys = [ x | x <- xs, any (== x) ys ]
 
 
+transpose' :: [[a]] -> [[a]]
+transpose' = foldr step []
+    where
+        step :: [a] -> [[a]] -> [[a]]
+        step [] [] = []
+        step [] (ys:yss) = ys : step [] yss
+        step (x:xs) [] = [x] : step xs []
+        step (x:xs) (ys:yss) = (x:ys) : step xs yss
 
+
+f = transpose' [[1,2],[3,4],[5],[6,7,8]]
 
 
 

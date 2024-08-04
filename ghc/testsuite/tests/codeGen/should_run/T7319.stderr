@@ -1,0 +1,7 @@
+T7319: Exception:
+
+test
+
+Package: ghc-internal
+Module: GHC.Internal.Exception
+Type: ErrorCall

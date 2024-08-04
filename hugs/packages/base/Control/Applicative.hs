@@ -35,9 +35,9 @@ module Control.Applicative (
 	optional, some, many
 	) where
 
-
-
-
+#ifdef __HADDOCK__
+import Prelude
+#endif
 
 import Control.Arrow
 	(Arrow(arr, (>>>), (&&&)), ArrowZero(zeroArrow), ArrowPlus((<+>)))

@@ -59,9 +59,9 @@ module Distribution.Simple (
         UserHooks(..), Args,
         defaultMainWithHooks, defaultUserHooks, emptyUserHooks,
         defaultHookedPackageDesc
-
-
-
+#ifdef DEBUG        
+        ,simpleHunitTests
+#endif
   ) where
 
 -- local
@@ -94,9 +94,9 @@ import Distribution.Simple.Utils (die, currentDir, rawSystemVerbose,
                                   moduleToFilePath, findFile,
                                   distPref, srcPref, haddockPref)
 
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+import Distribution.Simple.Utils (rawSystemPath)
+#endif
 import Language.Haskell.Extension
 -- Base
 import System.Environment(getArgs)
@@ -114,12 +114,12 @@ import Distribution.Compat.Directory(createDirectoryIfMissing,removeDirectoryRec
 import Distribution.Compat.FilePath(joinFileName, joinPaths, joinFileExt,
                                     splitFileName, splitFileExt, changeFileExt)
 
-
-
-
-
+#ifdef DEBUG
+import HUnit (Test)
+import Distribution.Version hiding (hunitTests)
+#else
 import Distribution.Version
-
+#endif
 
 type Args = [String]
 
@@ -637,14 +637,14 @@ defaultUserHooks
                        args' = configureArgs flags ++ args
                    confExists <- doesFileExist "configure"
                    if confExists then
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+                       -- FIXME: hack for script files under MinGW
+                       -- This assumes sh (check for #! line?)
+                       rawSystemPath verbose "sh" ("configure" : args')
+#else
                        -- FIXME: should we really be discarding the exit code?
                        rawSystemVerbose verbose "./configure" args'
-
+#endif
                      else do
                        no_extra_flags args
                        return ExitSuccess
@@ -685,7 +685,7 @@ defaultRegHook pkg_descr localbuildinfo _ flags =
 -- ------------------------------------------------------------
 -- * Testing
 -- ------------------------------------------------------------
-
-
-
-
+#ifdef DEBUG
+simpleHunitTests :: [Test]
+simpleHunitTests = []
+#endif

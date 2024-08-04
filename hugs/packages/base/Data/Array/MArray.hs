@@ -49,7 +49,7 @@ module Data.Array.MArray (
 import Prelude
 
 import Data.Ix
-
-
-
+#ifdef __HADDOCK__
+import Data.Array.IArray
+#endif
 import Data.Array.Base

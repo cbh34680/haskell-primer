@@ -207,11 +207,11 @@ import Prelude hiding
 import System.IO            (hClose,openFile,IOMode(..))
 import Control.Exception    (bracket)
 
-
-
-
-
-
+#define STRICT1(f) f a | a `seq` False = undefined
+#define STRICT2(f) f a b | a `seq` b `seq` False = undefined
+#define STRICT3(f) f a b c | a `seq` b `seq` c `seq` False = undefined
+#define STRICT4(f) f a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+#define STRICT5(f) f a b c d e | a `seq` b `seq` c `seq` d `seq` e `seq` False = undefined
 
 ------------------------------------------------------------------------
 
@@ -590,7 +590,7 @@ lines (LPS (x:xs)) = loop0 x xs
     -- the common special case where we have no existing chunks of
     -- the current line
     loop0 :: B.ByteString -> [B.ByteString] -> [ByteString]
-    loop0 a b | a `seq` b `seq` False = undefined
+    STRICT2(loop0)
     loop0 ps pss =
         case B.elemIndex (c2w '\n') ps of
             Nothing -> case pss of
@@ -607,7 +607,7 @@ lines (LPS (x:xs)) = loop0 x xs
     -- the general case when we are building a list of chunks that are
     -- part of the same line
     loop :: B.ByteString -> [B.ByteString] -> [B.ByteString] -> [ByteString]
-    loop a b c | a `seq` b `seq` c `seq` False = undefined
+    STRICT3(loop)
     loop ps line pss =
         case B.elemIndex (c2w '\n') ps of
             Nothing ->
@@ -659,7 +659,7 @@ readInt (LPS (x:xs)) =
             _   -> loop False 0 0 x xs
 
     where loop :: Bool -> Int -> Int -> B.ByteString -> [B.ByteString] -> Maybe (Int, ByteString)
-          loop a b c d e | a `seq` b `seq` c `seq` d `seq` e `seq` False = undefined
+          STRICT5(loop)
           loop neg i n ps pss
               | B.null ps = case pss of
                                 []         -> end  neg i n ps  pss
@@ -704,7 +704,7 @@ readInteger (LPS (x:xs)) =
 
           loop :: Int -> Int -> [Integer]
                -> B.ByteString -> [B.ByteString] -> (Integer, ByteString)
-          loop a b c d e | a `seq` b `seq` c `seq` d `seq` e `seq` False = undefined
+          STRICT5(loop)
           loop d acc ns ps pss
               | B.null ps = case pss of
                                 []         -> combine d acc ns ps pss

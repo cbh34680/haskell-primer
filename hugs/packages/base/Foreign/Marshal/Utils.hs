@@ -52,16 +52,16 @@ import Foreign.Storable		( Storable(poke) )
 import Foreign.C.Types    	( CSize )
 import Foreign.Marshal.Alloc 	( malloc, alloca )
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.IOBase
+import GHC.Real			( fromIntegral )
+import GHC.Num
+import GHC.Base
+#endif
 
-
-
-
-
-
-
-
-
-
+#ifdef __NHC__
+import Foreign.C.Types		( CInt(..) )
+#endif
 
 -- combined allocation and marshalling
 -- -----------------------------------

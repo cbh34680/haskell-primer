@@ -21,21 +21,21 @@ module System.Exit
 
 import Prelude
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.IOBase
+#endif
 
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Prelude
 import Hugs.Exception
+#endif
 
-
-
-
-
-
-
-
+#ifdef __NHC__
+import System
+  ( ExitCode(..)
+  , exitWith
+  )
+#endif
 
 -- ---------------------------------------------------------------------------
 -- exitWith
@@ -57,15 +57,15 @@ import Hugs.Exception
 -- that cleanup computations added with 'Control.Exception.bracket'
 -- (from "Control.Exception") are also executed properly on 'exitWith'.
 
-
+#ifndef __NHC__
 exitWith :: ExitCode -> IO a
 exitWith ExitSuccess = throwIO (ExitException ExitSuccess)
 exitWith code@(ExitFailure n)
   | n /= 0 = throwIO (ExitException code)
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+  | otherwise = ioError (IOError Nothing InvalidArgument "exitWith" "ExitFailure 0" Nothing)
+#endif
+#endif  /* ! __NHC__ */
 
 -- | The computation 'exitFailure' is equivalent to
 -- 'exitWith' @(@'ExitFailure' /exitfail/@)@,

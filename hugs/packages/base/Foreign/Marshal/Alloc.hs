@@ -35,26 +35,26 @@ import Foreign.Ptr	 	( Ptr, nullPtr, FunPtr )
 import Foreign.C.Types	 	( CSize )
 import Foreign.Storable  	( Storable(sizeOf) )
 
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import Foreign.ForeignPtr	( FinalizerPtr )
+import GHC.IOBase
+import GHC.Real
+import GHC.Ptr
+import GHC.Err
+import GHC.Base
+import GHC.Num
+#elif defined(__NHC__)
+import NHC.FFI			( FinalizerPtr, CInt(..) )
+import IO			( bracket )
+#else
 import Control.Exception	( bracket )
+#endif
 
-
-
+#ifdef __HUGS__
 import Hugs.Prelude		( IOException(IOError),
 				  IOErrorType(ResourceExhausted) )
 import Hugs.ForeignPtr		( FinalizerPtr )
-
+#endif
 
 
 -- exported functions
@@ -104,21 +104,21 @@ alloca  = doAlloca undefined
 -- The memory is freed when @f@ terminates (either normally or via an
 -- exception), so the pointer passed to @f@ must /not/ be used after this.
 --
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+allocaBytes :: Int -> (Ptr a -> IO b) -> IO b
+allocaBytes (I# size) action = IO $ \ s ->
+     case newPinnedByteArray# size s      of { (# s, mbarr# #) ->
+     case unsafeFreezeByteArray# mbarr# s of { (# s, barr#  #) ->
+     let addr = Ptr (byteArrayContents# barr#) in
+     case action addr    of { IO action ->
+     case action s       of { (# s, r #) ->
+     case touch# barr# s of { s ->
+     (# s, r #)
+  }}}}}
+#else
 allocaBytes      :: Int -> (Ptr a -> IO b) -> IO b
 allocaBytes size  = bracket (mallocBytes size) free
-
+#endif
 
 -- |Resize a memory area that was allocated with 'malloc' or 'mallocBytes'
 -- to the size needed to store values of type @b@.  The returned pointer
@@ -175,12 +175,12 @@ failWhenNULL :: String -> IO (Ptr a) -> IO (Ptr a)
 failWhenNULL name f = do
    addr <- f
    if addr == nullPtr
-
+#if __GLASGOW_HASKELL__ || __HUGS__
       then ioError (IOError Nothing ResourceExhausted name 
 					"out of memory" Nothing)
-
-
-
+#else
+      then ioError (userError (name++": out of memory"))
+#endif
       else return addr
 
 -- basic C routines needed for memory allocation

@@ -29,11 +29,11 @@ module Data.PackedString
 	packString,  -- :: String -> PackedString
 	unpackPS,    -- :: PackedString -> String
 
-
+#ifndef __NHC__
 	-- * I\/O with @PackedString@s	
 	hPutPS,      -- :: Handle -> PackedString -> IO ()
 	hGetPS,      -- :: Handle -> Int -> IO PackedString
-
+#endif
 
 	-- * List-like manipulation functions
 	nilPS,       -- :: PackedString
@@ -73,7 +73,7 @@ module Data.PackedString
 
 import Prelude
 
-
+#ifndef __NHC__
 
 import Data.Array.Unboxed
 import Data.Array.IO
@@ -105,63 +105,8 @@ instance Ord PackedString where
 instance Show PackedString where
     showsPrec p ps r = showsPrec p (unpackPS ps) r
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-packedStringTc = mkTyCon "PackedString"; instance Typeable PackedString where { typeOf _ = mkTyConApp packedStringTc [] }
+#include "Typeable.h"
+INSTANCE_TYPEABLE0(PackedString,packedStringTc,"PackedString")
 
 -- -----------------------------------------------------------------------------
 -- Constructor functions
@@ -400,90 +345,90 @@ hGetPS h i = do
   chars <- mapM (\i -> readArray arr i >>= return.chr.fromIntegral) [0..l-1]
   return (packNChars l chars)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#else	/* __NHC__ */
+
+--import Prelude hiding (append, break, concat, cons, drop, dropWhile,
+--                       filter, foldl, foldr, head, length, lines, map,
+--                       nil, null, reverse, span, splitAt, subst, tail,
+--                       take, takeWhile, unlines, unwords, words)
+-- also hiding: Ix(..), Functor(..)
+import qualified NHC.PackedString
+import NHC.PackedString (PackedString,packString,unpackPS)
+import List (intersperse)
+
+
+nilPS       :: PackedString
+consPS      :: Char -> PackedString -> PackedString
+headPS      :: PackedString -> Char
+tailPS      :: PackedString -> PackedString
+nullPS      :: PackedString -> Bool
+appendPS    :: PackedString -> PackedString -> PackedString
+lengthPS    :: PackedString -> Int
+indexPS     :: PackedString -> Int -> Char
+mapPS       :: (Char -> Char) -> PackedString -> PackedString
+filterPS    :: (Char -> Bool) -> PackedString -> PackedString
+reversePS   :: PackedString -> PackedString
+concatPS    :: [PackedString] -> PackedString
+elemPS      :: Char -> PackedString -> Bool
+substrPS    :: PackedString -> Int -> Int -> PackedString
+takePS      :: Int -> PackedString -> PackedString
+dropPS      :: Int -> PackedString -> PackedString
+splitAtPS   :: Int -> PackedString -> (PackedString, PackedString)
+
+foldlPS     :: (a -> Char -> a) -> a -> PackedString -> a
+foldrPS     :: (Char -> a -> a) -> a -> PackedString -> a
+takeWhilePS :: (Char -> Bool) -> PackedString -> PackedString
+dropWhilePS :: (Char -> Bool) -> PackedString -> PackedString
+spanPS      :: (Char -> Bool) -> PackedString -> (PackedString, PackedString)
+breakPS     :: (Char -> Bool) -> PackedString -> (PackedString, PackedString)
+linesPS     :: PackedString -> [PackedString]
+unlinesPS   :: [PackedString] -> PackedString
+
+wordsPS     :: PackedString -> [PackedString]
+unwordsPS   :: [PackedString] -> PackedString
+splitPS     :: Char -> PackedString -> [PackedString]
+splitWithPS :: (Char -> Bool) -> PackedString -> [PackedString]
+joinPS      :: PackedString -> [PackedString] -> PackedString
+
+nilPS       = NHC.PackedString.nil
+consPS      = NHC.PackedString.cons
+headPS      = NHC.PackedString.head
+tailPS      = NHC.PackedString.tail
+nullPS      = NHC.PackedString.null
+appendPS    = NHC.PackedString.append
+lengthPS    = NHC.PackedString.length
+indexPS p i = (unpackPS p) !! i
+mapPS       = NHC.PackedString.map
+filterPS    = NHC.PackedString.filter
+reversePS   = NHC.PackedString.reverse
+concatPS    = NHC.PackedString.concat
+elemPS c p  = c `elem` unpackPS p
+substrPS    = NHC.PackedString.substr
+takePS      = NHC.PackedString.take
+dropPS      = NHC.PackedString.drop
+splitAtPS   = NHC.PackedString.splitAt
+
+foldlPS     = NHC.PackedString.foldl
+foldrPS     = NHC.PackedString.foldr
+takeWhilePS = NHC.PackedString.takeWhile
+dropWhilePS = NHC.PackedString.dropWhile
+spanPS      = NHC.PackedString.span
+breakPS     = NHC.PackedString.break
+linesPS     = NHC.PackedString.lines
+unlinesPS   = NHC.PackedString.unlines
+
+wordsPS     = NHC.PackedString.words
+unwordsPS   = NHC.PackedString.unwords
+splitPS c   = splitWithPS (==c)
+splitWithPS p =
+    map packString . split' p [] . unpackPS
+  where
+    split' :: (Char->Bool) -> String -> String -> [String]
+    split' pred []  []     = []
+    split' pred acc []     = [reverse acc]
+    split' pred acc (x:xs) | pred x    = reverse acc: split' pred [] xs
+                           | otherwise = split' pred (x:acc) xs
+
+joinPS sep  = concatPS . intersperse sep
+
+#endif

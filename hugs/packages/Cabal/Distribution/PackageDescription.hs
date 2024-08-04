@@ -77,10 +77,10 @@ module Distribution.PackageDescription (
         hcOptions,
         autogenModuleName,
         haddockName,
-
-
-
-
+#ifdef DEBUG
+        hunitTests,
+        test
+#endif
   ) where
 
 import Control.Monad(liftM, foldM, when)
@@ -107,10 +107,10 @@ import Language.Haskell.Extension(Extension(..))
 import Distribution.Compat.ReadP as ReadP hiding (get)
 import Distribution.Compat.FilePath(joinFileExt)
 
-
-
-
-
+#ifdef DEBUG
+import HUnit (Test(..), assertBool, Assertion, runTestTT, Counts, assertEqual)
+import Distribution.ParseUtils  (runP)
+#endif
 
 -- |Fix. Figure out a way to get this from .cabal file
 cabalVersion :: Version
@@ -706,191 +706,191 @@ hasMods pkg_descr =
 -- ------------------------------------------------------------
 -- * Testing
 -- ------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef DEBUG
+testPkgDesc :: String
+testPkgDesc = unlines [
+        "-- Required",
+        "Name: Cabal",
+        "Version: 0.1.1.1.1-rain",
+        "License: LGPL",
+        "License-File: foo",
+        "Copyright: Free Text String",
+        "Cabal-version: >1.1.1",
+        "-- Optional - may be in source?",
+        "Author: Happy Haskell Hacker",
+        "Homepage: http://www.haskell.org/foo",
+        "Package-url: http://www.haskell.org/foo",
+        "Synopsis: a nice package!",
+        "Description: a really nice package!",
+        "Category: tools",
+        "buildable: True",
+        "CC-OPTIONS: -g -o",
+        "LD-OPTIONS: -BStatic -dn",
+        "Frameworks: foo",
+        "Tested-with: GHC",
+        "Stability: Free Text String",
+        "Build-Depends: haskell-src, HUnit>=1.0.0-rain",
+        "Other-Modules: Distribution.Package, Distribution.Version,",
+        "                Distribution.Simple.GHCPackageConfig",
+        "Other-files: file1, file2",
+        "Extra-Tmp-Files:    file1, file2",
+        "C-Sources: not/even/rain.c, such/small/hands",
+        "HS-Source-Dirs: src, src2",
+        "Exposed-Modules: Distribution.Void, Foo.Bar",
+        "Extensions: OverlappingInstances, TypeSynonymInstances",
+        "Extra-Libraries: libfoo, bar, bang",
+        "Extra-Lib-Dirs: \"/usr/local/libs\"",
+        "Include-Dirs: your/slightest, look/will",
+        "Includes: /easily/unclose, /me, \"funky, path\\\\name\"",
+        "Install-Includes: /easily/unclose, /me, \"funky, path\\\\name\"",
+        "GHC-Options: -fTH -fglasgow-exts",
+        "Hugs-Options: +TH",
+        "Nhc-Options: ",
+        "Jhc-Options: ",
+        "",
+        "-- Next is an executable",
+        "Executable: somescript",
+        "Main-is: SomeFile.hs",
+        "Other-Modules: Foo1, Util, Main",
+        "HS-Source-Dir: scripts",
+        "Extensions: OverlappingInstances",
+        "GHC-Options: ",
+        "Hugs-Options: ",
+        "Nhc-Options: ",
+        "Jhc-Options: "
+        ]
+
+testPkgDescAnswer :: PackageDescription
+testPkgDescAnswer = 
+ PackageDescription {package = PackageIdentifier {pkgName = "Cabal",
+                                                 pkgVersion = Version {versionBranch = [0,1,1,1,1],
+                                                 versionTags = ["rain"]}},
+                    license = LGPL,
+                    licenseFile = "foo",
+                    copyright = "Free Text String",
+                    author  = "Happy Haskell Hacker",
+                    homepage = "http://www.haskell.org/foo",
+                    pkgUrl   = "http://www.haskell.org/foo",
+                    synopsis = "a nice package!",
+                    description = "a really nice package!",
+                    category = "tools",
+                               descCabalVersion=LaterVersion (Version [1,1,1] []),
+                    buildDepends = [Dependency "haskell-src" AnyVersion,
+                                     Dependency "HUnit"
+                                     (UnionVersionRanges (ThisVersion (Version [1,0,0] ["rain"]))
+                                      (LaterVersion (Version [1,0,0] ["rain"])))],
+                    testedWith=[(GHC, AnyVersion)],
+                    maintainer = "",
+                    stability = "Free Text String",
+                    extraTmpFiles=["file1", "file2"],
+                    extraSrcFiles=["file1", "file2"],
+                    dataFiles=[],
+
+                    library = Just $ Library {
+                        exposedModules = ["Distribution.Void", "Foo.Bar"],
+                        libBuildInfo=BuildInfo {
+                           buildable = True,
+                           ccOptions = ["-g", "-o"],
+                           ldOptions = ["-BStatic", "-dn"],
+                           frameworks = ["foo"],
+                           cSources = ["not/even/rain.c", "such/small/hands"],
+                           hsSourceDirs = ["src", "src2"],
+                           otherModules = ["Distribution.Package",
+                                           "Distribution.Version",
+                                           "Distribution.Simple.GHCPackageConfig"],
+                           extensions = [OverlappingInstances, TypeSynonymInstances],
+                           extraLibs = ["libfoo", "bar", "bang"],
+                           extraLibDirs = ["/usr/local/libs"],
+                           includeDirs = ["your/slightest", "look/will"],
+                           includes = ["/easily/unclose", "/me", "funky, path\\name"],
+                           installIncludes = ["/easily/unclose", "/me", "funky, path\\name"],
+                           -- Note reversed order:
+                           ghcProfOptions = [],
+                           options = [(JHC,[]),(NHC, []), (Hugs,["+TH"]), (GHC,["-fTH","-fglasgow-exts"])]}
+                    },
+                    executables = [Executable "somescript" 
+                       "SomeFile.hs" (
+                      emptyBuildInfo{
+                        otherModules=["Foo1","Util","Main"],
+                        hsSourceDirs = ["scripts"],
+                        extensions = [OverlappingInstances],
+                        options = [(JHC,[]),(NHC,[]),(Hugs,[]),(GHC,[])]
+                      })]
+}
+
+hunitTests :: [Test]
+hunitTests = [
+              TestLabel "license parsers" $ TestCase $
+                 sequence_ [assertParseOk ("license " ++ show lVal) lVal
+                                        (runP 1 "license" parseLicenseQ (show lVal))
+                           | lVal <- [GPL,LGPL,BSD3,BSD4]],
+
+              TestLabel "Required fields" $ TestCase $
+                 do assertParseOk "some fields"
+                       emptyPackageDescription{package=(PackageIdentifier "foo"
+                                                        (Version [0,0] ["asdf"]))}
+                       (parseDescription "Name: foo\nVersion: 0.0-asdf")
+
+                    assertParseOk "more fields foo"
+                       emptyPackageDescription{package=(PackageIdentifier "foo"
+                                                        (Version [0,0]["asdf"])),
+                                               license=GPL}
+                       (parseDescription "Name: foo\nVersion:0.0-asdf\nLicense: GPL")
+
+                    assertParseOk "required fields for foo"
+                       emptyPackageDescription{package=(PackageIdentifier "foo"
+                                                        (Version [0,0]["asdf"])),
+                                        license=GPL, copyright="2004 isaac jones"}
+                       (parseDescription "Name: foo\nVersion:0.0-asdf\nCopyright: 2004 isaac jones\nLicense: GPL"),
+                                          
+             TestCase $ assertParseOk "no library" Nothing
+                        (library `liftM` parseDescription "Name: foo\nVersion: 1\nLicense: GPL\nMaintainer: someone\n\nExecutable: script\nMain-is: SomeFile.hs\n"),
+
+             TestLabel "Package description" $ TestCase $ 
+                assertParseOk "entire package description" testPkgDescAnswer
+                                                         (parseDescription testPkgDesc),
+             TestLabel "Package description pretty" $ TestCase $ 
+                case parseDescription testPkgDesc of
+                 ParseFailed _ -> assertBool "can't parse description" False
+                 ParseOk _ d -> case parseDescription $ showPackageDescription d of
+                                ParseFailed _ ->
+                                    assertBool "can't parse description after pretty print!" False
+                                ParseOk _ d' -> 
+                                    assertBool ("parse . show . parse not identity."
+                                                ++"   Incorrect fields:"
+                                                ++ (show $ comparePackageDescriptions d d'))
+                                               (d == d'),
+            TestLabel "Sanity checker" $ TestCase $ do
+              (warns, ers) <- sanityCheckPackage emptyPackageDescription
+              assertEqual "Wrong number of errors"   2 (length ers)
+              assertEqual "Wrong number of warnings" 4 (length warns)
+            ]
+
+-- |Compare two package descriptions and see which fields aren't the same.
+comparePackageDescriptions :: PackageDescription
+                           -> PackageDescription
+                           -> [String]      -- ^Errors
+comparePackageDescriptions p1 p2
+    = catMaybes $ myCmp package "package" : myCmp license "license": myCmp licenseFile "licenseFile":  myCmp copyright "copyright":  myCmp maintainer "maintainer":  myCmp author "author":  myCmp stability "stability":  myCmp testedWith "testedWith":  myCmp homepage "homepage":  myCmp pkgUrl "pkgUrl":  myCmp synopsis "synopsis":  myCmp description "description":  myCmp category "category":  myCmp buildDepends "buildDepends":  myCmp library "library":  myCmp executables "executables": myCmp descCabalVersion "cabal-version":[]
+
+
+      where myCmp :: (Eq a, Show a) => (PackageDescription -> a)
+                  -> String       -- Error message
+                  -> Maybe String -- 
+            myCmp f er = let e1 = f p1
+                             e2 = f p2
+                          in toMaybe (e1 /= e2)
+                                     (er ++ " Expected: " ++ show e1
+                                              ++ " Got: " ++ show e2)
+
+-- |Assert that the 2nd value parses correctly and matches the first value
+assertParseOk :: (Eq val) => String -> val -> ParseResult val -> Assertion
+assertParseOk mes expected actual
+    =  assertBool mes
+           (case actual of
+             ParseOk _ v -> v == expected
+             _         -> False)
+
+test :: IO Counts
+test = runTestTT (TestList hunitTests)
+#endif

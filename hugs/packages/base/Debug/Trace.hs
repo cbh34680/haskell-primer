@@ -21,11 +21,11 @@ module Debug.Trace (
 import Prelude
 import System.IO.Unsafe
 
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import Foreign.C.String
+#else
 import System.IO (hPutStrLn,stderr)
-
+#endif
 
 -- | 'putTraceMsg' function outputs the trace message from IO monad.
 -- Usually the output stream is 'System.IO.stderr' but if the function is called
@@ -33,16 +33,16 @@ import System.IO (hPutStrLn,stderr)
 -- debug console.
 putTraceMsg :: String -> IO ()
 putTraceMsg msg = do
-
+#ifndef __GLASGOW_HASKELL__
     hPutStrLn stderr msg
+#else
+    withCString "%s\n" $ \cfmt ->
+     withCString msg  $ \cmsg ->
+      debugBelch cfmt cmsg
 
-
-
-
-
-
-
-
+foreign import ccall unsafe "RtsMessages.h debugBelch"
+   debugBelch :: CString -> CString -> IO ()
+#endif
 
 {-# NOINLINE trace #-}
 {-|

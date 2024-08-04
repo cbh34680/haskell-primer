@@ -30,68 +30,68 @@ module Data.Maybe
    , mapMaybe		-- :: (a -> Maybe b) -> [a] -> [b]
    ) where
 
+#ifdef __GLASGOW_HASKELL__
+import {-# SOURCE #-} GHC.Err ( error )
+import GHC.Base
+#endif
 
+#ifdef __NHC__
+import Prelude
+import Prelude (Maybe(..), maybe)
+import Maybe
+    ( isJust
+    , isNothing
+    , fromJust
+    , fromMaybe
+    , listToMaybe
+    , maybeToList 
+    , catMaybes
+    , mapMaybe
+    )
+#else
 
+#ifndef __HUGS__
+-- ---------------------------------------------------------------------------
+-- The Maybe type, and instances
 
+-- | The 'Maybe' type encapsulates an optional value.  A value of type
+-- @'Maybe' a@ either contains a value of type @a@ (represented as @'Just' a@), 
+-- or it is empty (represented as 'Nothing').  Using 'Maybe' is a good way to 
+-- deal with errors or exceptional cases without resorting to drastic
+-- measures such as 'error'.
+--
+-- The 'Maybe' type is also a monad.  It is a simple kind of error
+-- monad, where all errors are represented by 'Nothing'.  A richer
+-- error monad can be built using the 'Data.Either.Either' type.
 
+data  Maybe a  =  Nothing | Just a	
+  deriving (Eq, Ord)
 
+instance  Functor Maybe  where
+    fmap _ Nothing       = Nothing
+    fmap f (Just a)      = Just (f a)
 
+instance  Monad Maybe  where
+    (Just x) >>= k      = k x
+    Nothing  >>= _      = Nothing
 
+    (Just _) >>  k      = k
+    Nothing  >>  _      = Nothing
 
+    return              = Just
+    fail _		= Nothing
 
+-- ---------------------------------------------------------------------------
+-- Functions over Maybe
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- | The 'maybe' function takes a default value, a function, and a 'Maybe'
+-- value.  If the 'Maybe' value is 'Nothing', the function returns the
+-- default value.  Otherwise, it applies the function to the value inside
+-- the 'Just' and returns the result.
+maybe :: b -> (a -> b) -> Maybe a -> b
+maybe n _ Nothing  = n
+maybe _ f (Just x) = f x
+#endif  /* __HUGS__ */
 
 -- | The 'isJust' function returns 'True' iff its argument is of the
 -- form @Just _@.
@@ -146,4 +146,4 @@ mapMaybe f (x:xs) =
   Nothing -> rs
   Just r  -> r:rs
 
-
+#endif /* else not __NHC__ */

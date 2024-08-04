@@ -23,73 +23,18 @@ module Data.STRef (
 
 import Prelude
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.ST
+import GHC.STRef
+#endif
 
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.ST
 import Data.Typeable
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-stRefTc = mkTyCon "STRef"; instance Typeable2 STRef where { typeOf2 _ = mkTyConApp stRefTc [] }; instance Typeable a => Typeable1 (STRef a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (STRef a b) where {   typeOf = typeOfDefault }
-
+#include "Typeable.h"
+INSTANCE_TYPEABLE2(STRef,stRefTc,"STRef")
+#endif
 
 -- |Mutate the contents of an 'STRef'
 modifySTRef :: STRef s a -> (a -> a) -> ST s ()

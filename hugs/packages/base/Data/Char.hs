@@ -54,30 +54,30 @@ module Data.Char
      -- Implementation checked wrt. Haskell 98 lib report, 1/99.
     ) where
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.Arr (Ix)
+import GHC.Real (fromIntegral)
+import GHC.Show
+import GHC.Read (Read, readLitChar, lexLitChar)
+import GHC.Unicode
+import GHC.Num
+import GHC.Enum
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Prelude (Ix)
 import Hugs.Char
+#endif
 
-
-
-
-
-
-
-
-
-
+#ifdef __NHC__
+import Prelude
+import Prelude(Char,String)
+import Char
+import Ix
+import NHC.FFI (CInt)
+foreign import ccall unsafe "WCsubst.h u_gencat" wgencat :: CInt -> Int
+#endif
 
 -- | Convert a single digit 'Char' to the corresponding 'Int'.  
 -- This function fails unless its argument satisfies 'isHexDigit',
@@ -90,11 +90,11 @@ digitToInt c
  | c >= 'A' && c <= 'F' =  ord c - ord 'A' + 10
  | otherwise	        =  error ("Char.digitToInt: not a digit " ++ show c) -- sigh
 
-
+#ifndef __GLASGOW_HASKELL__
 isAsciiUpper, isAsciiLower :: Char -> Bool
 isAsciiLower c          =  c >= 'a' && c <= 'z'
 isAsciiUpper c          =  c >= 'A' && c <= 'Z'
-
+#endif
 
 -- | Unicode General Categories (column 2 of the UnicodeData table)
 -- in the order they are listed in the Unicode standard.
@@ -134,12 +134,12 @@ data GeneralCategory
 
 -- | The Unicode general category of the character.
 generalCategory :: Char -> GeneralCategory
-
-
-
-
+#if defined(__GLASGOW_HASKELL__) || defined(__NHC__)
+generalCategory c = toEnum (wgencat (fromIntegral (ord c)))
+#endif
+#ifdef __HUGS__
 generalCategory c = toEnum (primUniGenCat c)
-
+#endif
 
 -- derived character classifiers
 
@@ -204,8 +204,8 @@ isSeparator c = case generalCategory c of
         ParagraphSeparator      -> True
         _                       -> False
 
-
-
-
-
-
+#ifdef __NHC__
+-- dummy implementation
+toTitle :: Char -> Char
+toTitle = toUpper
+#endif

@@ -23,17 +23,17 @@ module Data.Bool (
    otherwise,	-- :: Bool
   ) where
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __NHC__
+import Prelude
+import Prelude
+  ( Bool(..)
+  , (&&)
+  , (||)
+  , not
+  , otherwise
+  )
+#endif

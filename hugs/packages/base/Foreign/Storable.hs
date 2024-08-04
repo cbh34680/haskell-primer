@@ -29,973 +29,39 @@ module Foreign.Storable
         ) where
 
 
-
-
-
-
+#ifdef __NHC__
+import NHC.FFI (Storable(..),Ptr,FunPtr,StablePtr
+               ,Int8,Int16,Int32,Int64,Word8,Word16,Word32,Word64)
+#else
 
 import Control.Monad		( liftM )
 
-                                                                                                                                                                                                        
-
-                                                                        
-                                                                          
-
-                               
-                                                                                                            
-
-
-
-
-
-
-
-                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-                                                         
-
-
-
-
-
-
-
-
-
-
-
-
-                                
-
-
-                                  
-
-
-                                 
-
-
-                               
-
-
-                                
-
-
-                                     
-
-
-                                 
-
-
-                                         
-
-
-                                        
-
-
-                                         
-
-
-                                              
-
-
-                                          
-
-
-                                  
-
-
-                                                           
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                          
-
-
-                                                         
-
-
-                                                           
-
-
-                                                            
-
-
-                                                         
-
-
-                                                                              
-
-
-                                              
-
-
-                                                          
-
-
-                                                          
-
-
-                                            
-
-
-                                                
-
-
-                                                  
-
-
-                                                 
-
-
-                                               
-
-
-                                                
-
-
-                                                     
-
-
-                                                 
-
-
-                                                         
-
-
-                                                        
-
-
-                                                         
-
-
-                                                              
-
-
-                                                          
-
-
-                                                  
-
-
-                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                                              
-                                                                             
-
-                         
-
-
-                          
-
-
-                              
-
-
-                                 
-
-
-                        
-
-
-                                
-
-
-                          
-
-
-                            
-
-
-                         
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                          
-
-
-                         
-
-
-                                
-
-
-                                
-
-
-                              
-
-
-                           
-
-
-                                
-
-
-                          
-
-
-                        
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                             
-
-
-                                
-
-
-                         
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                          
-
-
-                       
-
-
-                           
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                            
-
-
-                             
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                               
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                               
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                             
-
-
-                            
-
-
-                          
-
-
-                         
-
-
-                              
-
-
-                         
-
-
-                                
-
-
-                         
-
-
-                            
-
-
-                                
-
-
-                                 
-
-
-                                
-
-
-                          
-
-
-                                   
-
-
-                              
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                                   
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                             
-
-
-                                
-
-
-                           
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                            
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                               
-
-
-                               
-
-
-                                                        
-
-
-                                                                                     
-
-
-                                                                                    
-                             
-
-                                                         
-
-
-                                                        
-
-
-                                                        
-
-
-                                                  
-
-
-                                                   
-
-
-                                                       
-
-
-                                                      
-                          
-
-                                                       
-
-
-                                                          
-
-
-                                                      
-
-
-                                                           
-
-
-                                                      
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                   
-
-
-                                                         
-
-
-                                                       
-
-
-                                                       
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                          
-
-
-                                                         
-
-
-                                                        
-
-
-                                                               
-
-
-                                                             
-
-
-                                                           
-
-
-                                                              
-
-
-                                                            
-
-
-                                                             
-                              
-
-                                                            
-
-
-                                                           
-
-
-                                                            
-
-
-                                                              
-
-
-                                                           
-
-
-                                                          
-
-
-                                                   
-
-
-                                                       
-
-
-                                                                                                         
-
-
-                                                                                         
-                        
-
-                                                         
-
-
-                                                        
-
-
-                                                   
-
-
-                                                        
-                         
-
-                                                         
-
-
-                                                          
-                           
-
-                                                          
-                           
-
-                                  
-
-
-                                   
-
-
-                                                     
-                         
-
-                                     
-
-
-                                     
-
-
-                                        
-
-
-                                      
-
-
-                                       
-
-
-                                      
-
-
-                                      
-
-
-                                      
-
-
-                                    
-
-
-                                         
-
-
-                                         
-
-
-                                     
-
-
-                                          
-
-
-                                       
-
-
-                                        
-
-
-                                      
-
-
-                                      
-
-
-                                          
-
-
-                                       
-
-
-                                      
-
-
-                                            
-
-
-                                             
-
-
-                                       
-
-
-                                        
-
-
-                                        
-
-
-                                         
-
-
-                                       
-
-
-                                      
-
-
-                                          
-
-
-                                          
-
-
-                                              
-
-
-                                             
-
-
-                                              
-
-
-                                                   
-
-
-                                               
-
-
-                                        
-
-
-                                       
-                         
-
-                                                                              
-
-
-                                              
-
-
-                                                          
-
-
-                                                          
-
-
-                                            
-
-
-                                           
-
-
-                                                      
-
-
-                                                                           
-
-
-                                                            
-                           
-
-                                                                       
-                              
-
-                                                 
-                         
-
-                                                            
-                  
-
-                                                       
-                  
-
-                                                
-                  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#include "MachDeps.h"
+#include "HsBaseConfig.h"
+
+#ifdef __GLASGOW_HASKELL__
+import GHC.Storable
+import GHC.Stable	( StablePtr )
+import GHC.Num
+import GHC.Int
+import GHC.Word
+import GHC.Stable
+import GHC.Ptr
+import GHC.Float
+import GHC.Err
+import GHC.IOBase
+import GHC.Base
+#else
 import Data.Int
 import Data.Word
 import Foreign.StablePtr
+#endif
 
-
-
+#ifdef __HUGS__
 import Hugs.Prelude
 import Hugs.Ptr
 import Hugs.Storable
-
+#endif
 
 {- |
 The member functions of this class facilitate writing values of
@@ -1087,13 +153,13 @@ class Storable a where
    -- restrictions might apply; see 'peek'.
  
    -- circular default instances
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+   peekElemOff = peekElemOff_ undefined
+      where peekElemOff_ :: a -> Ptr a -> Int -> IO a
+            peekElemOff_ undef ptr off = peekByteOff ptr (off * sizeOf undef)
+#else
    peekElemOff ptr off = peekByteOff ptr (off * sizeOfPtr ptr undefined)
-
+#endif
    pokeElemOff ptr off val = pokeByteOff ptr (off * sizeOf val) val
 
    peekByteOff ptr off = peek (ptr `plusPtr` off)
@@ -1102,63 +168,79 @@ class Storable a where
    peek ptr = peekElemOff ptr 0
    poke ptr = pokeElemOff ptr 0
 
-
+#ifndef __GLASGOW_HASKELL__
 sizeOfPtr :: Storable a => Ptr a -> a -> Int
 sizeOfPtr px x = sizeOf x
-
+#endif
 
 -- System-dependent, but rather obvious instances
 
 instance Storable Bool where
-   sizeOf _          = sizeOf (undefined::Int32)
-   alignment _       = alignment (undefined::Int32)
-   peekElemOff p i   = liftM (/= (0::Int32)) $ peekElemOff (castPtr p) i
-   pokeElemOff p i x = pokeElemOff (castPtr p) i (if x then 1 else 0::Int32)
+   sizeOf _          = sizeOf (undefined::HTYPE_INT)
+   alignment _       = alignment (undefined::HTYPE_INT)
+   peekElemOff p i   = liftM (/= (0::HTYPE_INT)) $ peekElemOff (castPtr p) i
+   pokeElemOff p i x = pokeElemOff (castPtr p) i (if x then 1 else 0::HTYPE_INT)
 
+#define STORABLE(T,size,align,read,write)	\
+instance Storable (T) where {			\
+    sizeOf    _ = size;				\
+    alignment _ = align;			\
+    peekElemOff = read;				\
+    pokeElemOff = write }
 
+#ifdef __GLASGOW_HASKELL__
+STORABLE(Char,SIZEOF_INT32,ALIGNMENT_INT32,
+	 readWideCharOffPtr,writeWideCharOffPtr)
+#elif defined(__HUGS__)
+STORABLE(Char,SIZEOF_HSCHAR,ALIGNMENT_HSCHAR,
+	 readCharOffPtr,writeCharOffPtr)
+#endif
 
+STORABLE(Int,SIZEOF_HSINT,ALIGNMENT_HSINT,
+	 readIntOffPtr,writeIntOffPtr)
 
+#ifndef __NHC__
+STORABLE(Word,SIZEOF_HSWORD,ALIGNMENT_HSWORD,
+	 readWordOffPtr,writeWordOffPtr)
+#endif
 
+STORABLE((Ptr a),SIZEOF_HSPTR,ALIGNMENT_HSPTR,
+	 readPtrOffPtr,writePtrOffPtr)
 
+STORABLE((FunPtr a),SIZEOF_HSFUNPTR,ALIGNMENT_HSFUNPTR,
+	 readFunPtrOffPtr,writeFunPtrOffPtr)
 
+STORABLE((StablePtr a),SIZEOF_HSSTABLEPTR,ALIGNMENT_HSSTABLEPTR,
+	 readStablePtrOffPtr,writeStablePtrOffPtr)
 
+STORABLE(Float,SIZEOF_HSFLOAT,ALIGNMENT_HSFLOAT,
+	 readFloatOffPtr,writeFloatOffPtr)
 
+STORABLE(Double,SIZEOF_HSDOUBLE,ALIGNMENT_HSDOUBLE,
+	 readDoubleOffPtr,writeDoubleOffPtr)
 
+STORABLE(Word8,SIZEOF_WORD8,ALIGNMENT_WORD8,
+	 readWord8OffPtr,writeWord8OffPtr)
 
+STORABLE(Word16,SIZEOF_WORD16,ALIGNMENT_WORD16,
+	 readWord16OffPtr,writeWord16OffPtr)
 
-instance Storable (Char) where {			    sizeOf    _ = 4;				    alignment _ = 4;			    peekElemOff = readCharOffPtr;				    pokeElemOff = writeCharOffPtr }
+STORABLE(Word32,SIZEOF_WORD32,ALIGNMENT_WORD32,
+	 readWord32OffPtr,writeWord32OffPtr)
 
+STORABLE(Word64,SIZEOF_WORD64,ALIGNMENT_WORD64,
+	 readWord64OffPtr,writeWord64OffPtr)
 
-instance Storable (Int) where {			    sizeOf    _ = 4;				    alignment _ = 4;			    peekElemOff = readIntOffPtr;				    pokeElemOff = writeIntOffPtr }
+STORABLE(Int8,SIZEOF_INT8,ALIGNMENT_INT8,
+	 readInt8OffPtr,writeInt8OffPtr)
 
+STORABLE(Int16,SIZEOF_INT16,ALIGNMENT_INT16,
+	 readInt16OffPtr,writeInt16OffPtr)
 
-instance Storable (Word) where {			    sizeOf    _ = 4;				    alignment _ = 4;			    peekElemOff = readWordOffPtr;				    pokeElemOff = writeWordOffPtr }
+STORABLE(Int32,SIZEOF_INT32,ALIGNMENT_INT32,
+	 readInt32OffPtr,writeInt32OffPtr)
 
+STORABLE(Int64,SIZEOF_INT64,ALIGNMENT_INT64,
+	 readInt64OffPtr,writeInt64OffPtr)
 
-instance Storable ((Ptr a)) where {			    sizeOf    _ = 8;				    alignment _ = 8;			    peekElemOff = readPtrOffPtr;				    pokeElemOff = writePtrOffPtr }
-
-instance Storable ((FunPtr a)) where {			    sizeOf    _ = 8;				    alignment _ = 8;			    peekElemOff = readFunPtrOffPtr;				    pokeElemOff = writeFunPtrOffPtr }
-
-instance Storable ((StablePtr a)) where {			    sizeOf    _ = 8;				    alignment _ = 8;			    peekElemOff = readStablePtrOffPtr;				    pokeElemOff = writeStablePtrOffPtr }
-
-instance Storable (Float) where {			    sizeOf    _ = 4;				    alignment _ = 4;			    peekElemOff = readFloatOffPtr;				    pokeElemOff = writeFloatOffPtr }
-
-instance Storable (Double) where {			    sizeOf    _ = 8;				    alignment _ = 8;			    peekElemOff = readDoubleOffPtr;				    pokeElemOff = writeDoubleOffPtr }
-
-instance Storable (Word8) where {			    sizeOf    _ = 1;				    alignment _ = 1;			    peekElemOff = readWord8OffPtr;				    pokeElemOff = writeWord8OffPtr }
-
-instance Storable (Word16) where {			    sizeOf    _ = 2;				    alignment _ = 2;			    peekElemOff = readWord16OffPtr;				    pokeElemOff = writeWord16OffPtr }
-
-instance Storable (Word32) where {			    sizeOf    _ = 4;				    alignment _ = 4;			    peekElemOff = readWord32OffPtr;				    pokeElemOff = writeWord32OffPtr }
-
-instance Storable (Word64) where {			    sizeOf    _ = 8;				    alignment _ = 8;			    peekElemOff = readWord64OffPtr;				    pokeElemOff = writeWord64OffPtr }
-
-instance Storable (Int8) where {			    sizeOf    _ = 1;				    alignment _ = 1;			    peekElemOff = readInt8OffPtr;				    pokeElemOff = writeInt8OffPtr }
-
-instance Storable (Int16) where {			    sizeOf    _ = 2;				    alignment _ = 2;			    peekElemOff = readInt16OffPtr;				    pokeElemOff = writeInt16OffPtr }
-
-instance Storable (Int32) where {			    sizeOf    _ = 4;				    alignment _ = 4;			    peekElemOff = readInt32OffPtr;				    pokeElemOff = writeInt32OffPtr }
-
-instance Storable (Int64) where {			    sizeOf    _ = 8;				    alignment _ = 8;			    peekElemOff = readInt64OffPtr;				    pokeElemOff = writeInt64OffPtr }
-
-
+#endif

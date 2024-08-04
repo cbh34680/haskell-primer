@@ -54,11 +54,11 @@ import System.IO.Unsafe         (unsafePerformIO)
 -- Useful macros, until we have bang patterns
 --
 
-
-
-
-
-
+#define STRICT1(f) f a | a `seq` False = undefined
+#define STRICT2(f) f a b | a `seq` b `seq` False = undefined
+#define STRICT3(f) f a b c | a `seq` b `seq` c `seq` False = undefined
+#define STRICT4(f) f a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+#define STRICT5(f) f a b c d e | a `seq` b `seq` c `seq` d `seq` e `seq` False = undefined
 
 infixl 2 :*:
 
@@ -90,9 +90,9 @@ fuseEFL f g (acc1 :*: acc2) e1 =
         acc1' :*: JustS e2 ->
             case g acc2 e2 of
                 acc2' :*: res -> (acc1' :*: acc2') :*: res
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] fuseEFL #-}
+#endif
 
 -- | Special forms of loop arguments
 --
@@ -108,93 +108,93 @@ fuseEFL f g (acc1 :*: acc2) e1 =
 -- 
 
 -- | Element function expressing a mapping only
-
+#if !defined(LOOPNOACC_FUSION)
 mapEFL :: (Word8 -> Word8) -> AccEFL NoAcc
 mapEFL f = \_ e -> (NoAcc :*: (JustS $ f e))
-
-
-
-
-
-
-
+#else
+mapEFL :: (Word8 -> Word8) -> NoAccEFL
+mapEFL f = \e -> JustS (f e)
+#endif
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] mapEFL #-}
+#endif
 
 -- | Element function implementing a filter function only
-
+#if !defined(LOOPNOACC_FUSION)
 filterEFL :: (Word8 -> Bool) -> AccEFL NoAcc
 filterEFL p = \_ e -> if p e then (NoAcc :*: JustS e) else (NoAcc :*: NothingS)
+#else
+filterEFL :: (Word8 -> Bool) -> NoAccEFL
+filterEFL p = \e -> if p e then JustS e else NothingS
+#endif
 
-
-
-
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] filterEFL #-}
+#endif
 
 -- |Element function expressing a reduction only
 foldEFL :: (acc -> Word8 -> acc) -> AccEFL acc
 foldEFL f = \a e -> (f a e :*: NothingS)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] foldEFL #-}
+#endif
 
 -- | A strict foldEFL.
 foldEFL' :: (acc -> Word8 -> acc) -> AccEFL acc
 foldEFL' f = \a e -> let a' = f a e in a' `seq` (a' :*: NothingS)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] foldEFL' #-}
+#endif
 
 -- | Element function expressing a prefix reduction only
 --
 scanEFL :: (Word8 -> Word8 -> Word8) -> AccEFL Word8
 scanEFL f = \a e -> (f a e :*: JustS a)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] scanEFL #-}
+#endif
 
 -- | Element function implementing a map and fold
 --
 mapAccumEFL :: (acc -> Word8 -> (acc, Word8)) -> AccEFL acc
 mapAccumEFL f = \a e -> case f a e of (a', e') -> (a' :*: JustS e')
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] mapAccumEFL #-}
+#endif
 
 -- | Element function implementing a map with index
 --
 mapIndexEFL :: (Int -> Word8 -> Word8) -> AccEFL Int
 mapIndexEFL f = \i e -> let i' = i+1 in i' `seq` (i' :*: JustS (f i e))
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] mapIndexEFL #-}
+#endif
 
 -- | Projection functions that are fusion friendly (as in, we determine when
 -- they are inlined)
 loopArr :: (PairS acc arr) -> arr
 loopArr (_ :*: arr) = arr
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] loopArr #-}
+#endif
 
 loopAcc :: (PairS acc arr) -> acc
 loopAcc (acc :*: _) = acc
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] loopAcc #-}
+#endif
 
 loopSndAcc :: (PairS (PairS acc1 acc2) arr) -> (PairS acc2 arr)
 loopSndAcc ((_ :*: acc) :*: arr) = (acc :*: arr)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] loopSndAcc #-}
+#endif
 
 unSP :: (PairS acc arr) -> (acc, arr)
 unSP (acc :*: arr) = (acc, arr)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] unSP #-}
+#endif
 
 ------------------------------------------------------------------------
 --
@@ -216,7 +216,7 @@ loopU f start (PS z s i) = unsafePerformIO $ withForeignPtr z $ \a -> do
   where
     go p ma = trans 0 0
         where
-            trans a b c | a `seq` b `seq` c `seq` False = undefined
+            STRICT3(trans)
             trans a_off ma_off acc
                 | a_off >= i = return (acc :*: ma_off)
                 | otherwise  = do
@@ -228,9 +228,9 @@ loopU f start (PS z s i) = unsafePerformIO $ withForeignPtr z $ \a -> do
                                        return $ ma_off + 1
                     trans (a_off+1) ma_off' acc'
 
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] loopU #-}
+#endif
 
 {-# RULES
 
@@ -255,9 +255,9 @@ loopL f = loop
           where (s'  :*: y@(PS _ _ l)) = loopU f s x -- avoid circular dep on P.null
                 (s'' :*: ys)           = loop s' xs
 
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] loopL #-}
+#endif
 
 {-# RULES
 
@@ -325,7 +325,7 @@ loopWrapper body (PS srcFPtr srcOffset srcLen) = unsafePerformIO $
 
 doUpLoop :: AccEFL acc -> acc -> ImperativeLoop acc
 doUpLoop f acc0 src dest len = loop 0 0 acc0
-  where loop a b c | a `seq` b `seq` c `seq` False = undefined
+  where STRICT3(loop)
         loop src_off dest_off acc
             | src_off >= len = return (acc :*: 0 :*: dest_off)
             | otherwise      = do
@@ -337,7 +337,7 @@ doUpLoop f acc0 src dest len = loop 0 0 acc0
 
 doDownLoop :: AccEFL acc -> acc -> ImperativeLoop acc
 doDownLoop f acc0 src dest len = loop (len-1) (len-1) acc0
-  where loop a b c | a `seq` b `seq` c `seq` False = undefined
+  where STRICT3(loop)
         loop src_off dest_off acc
             | src_off < 0 = return (acc :*: dest_off + 1 :*: len - (dest_off + 1))
             | otherwise   = do
@@ -349,7 +349,7 @@ doDownLoop f acc0 src dest len = loop (len-1) (len-1) acc0
 
 doNoAccLoop :: NoAccEFL -> noAcc -> ImperativeLoop noAcc
 doNoAccLoop f noAcc src dest len = loop 0 0
-  where loop a b | a `seq` b `seq` False = undefined
+  where STRICT2(loop)
         loop src_off dest_off
             | src_off >= len = return (noAcc :*: 0 :*: dest_off)
             | otherwise      = do
@@ -361,7 +361,7 @@ doNoAccLoop f noAcc src dest len = loop 0 0
 
 doMapLoop :: MapEFL -> noAcc -> ImperativeLoop noAcc
 doMapLoop f noAcc src dest len = loop 0
-  where loop a | a `seq` False = undefined
+  where STRICT1(loop)
         loop n
             | n >= len = return (noAcc :*: 0 :*: len)
             | otherwise      = do
@@ -371,7 +371,7 @@ doMapLoop f noAcc src dest len = loop 0
 
 doFilterLoop :: FilterEFL -> noAcc -> ImperativeLoop noAcc
 doFilterLoop f noAcc src dest len = loop 0 0
-  where loop a b | a `seq` b `seq` False = undefined
+  where STRICT2(loop)
         loop src_off dest_off
             | src_off >= len = return (noAcc :*: 0 :*: dest_off)
             | otherwise      = do
@@ -399,35 +399,35 @@ sequenceLoops loop1 loop2 src dest len0 = do
   -- TODO: prove that this is associative! (I think it is)
   -- since we can't be sure how the RULES will combine loops.
 
+#if defined(__GLASGOW_HASKELL__)
 
+{-# INLINE [1] doUpLoop             #-}
+{-# INLINE [1] doDownLoop           #-}
+{-# INLINE [1] doNoAccLoop          #-}
+{-# INLINE [1] doMapLoop            #-}
+{-# INLINE [1] doFilterLoop         #-}
 
+{-# INLINE [1] loopWrapper          #-}
+{-# INLINE [1] sequenceLoops        #-}
 
+{-# INLINE [1] fuseAccAccEFL        #-}
+{-# INLINE [1] fuseAccNoAccEFL      #-}
+{-# INLINE [1] fuseNoAccAccEFL      #-}
+{-# INLINE [1] fuseNoAccNoAccEFL    #-}
+{-# INLINE [1] fuseMapAccEFL        #-}
+{-# INLINE [1] fuseAccMapEFL        #-}
+{-# INLINE [1] fuseMapNoAccEFL      #-}
+{-# INLINE [1] fuseNoAccMapEFL      #-}
+{-# INLINE [1] fuseMapMapEFL        #-}
+{-# INLINE [1] fuseAccFilterEFL     #-}
+{-# INLINE [1] fuseFilterAccEFL     #-}
+{-# INLINE [1] fuseNoAccFilterEFL   #-}
+{-# INLINE [1] fuseFilterNoAccEFL   #-}
+{-# INLINE [1] fuseFilterFilterEFL  #-}
+{-# INLINE [1] fuseMapFilterEFL     #-}
+{-# INLINE [1] fuseFilterMapEFL     #-}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 {-# RULES
 

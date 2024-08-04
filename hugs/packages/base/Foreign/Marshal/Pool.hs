@@ -44,21 +44,21 @@ module Foreign.Marshal.Pool (
    pooledNewArray0      -- :: Storable a => Pool -> a -> [a]     -> IO (Ptr a)
 ) where
 
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base              ( Int, Monad(..), (.), not )
+import GHC.Err               ( undefined )
+import GHC.Exception         ( block, unblock, throw, catchException )
+import GHC.IOBase            ( IO, IORef, newIORef, readIORef, writeIORef, )
+import GHC.List              ( elem, length )
+import GHC.Num               ( Num(..) )
+#else
 import Data.IORef            ( IORef, newIORef, readIORef, writeIORef )
-
-
-
+#if defined(__NHC__)
+import IO                    ( bracket )
+#else
 import Control.Exception     ( bracket )
-
-
+#endif
+#endif
 
 import Control.Monad         ( liftM )
 import Data.List             ( delete )
@@ -94,18 +94,18 @@ freePool (Pool pool) = readIORef pool >>= freeAll
 -- deallocated (including its contents) after the action has finished.
 
 withPool :: (Pool -> IO b) -> IO b
-
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+withPool act =   -- ATTENTION: cut-n-paste from Control.Exception below!
+   block (do
+      pool <- newPool
+      val <- catchException
+                (unblock (act pool))
+                (\e -> do freePool pool; throw e)
+      freePool pool
+      return val)
+#else
 withPool = bracket newPool freePool
-
+#endif
 
 --------------------------------------------------------------------------------
 

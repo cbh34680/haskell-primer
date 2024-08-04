@@ -42,57 +42,25 @@ compilerName :: String
 
 compilerVersionRaw :: Int
 
+#if defined(__NHC__)
+#include "OSInfo.hs"
+compilerName = "nhc98"
+compilerVersionRaw = __NHC__
 
+#elif defined(__GLASGOW_HASKELL__)
+#include "ghcplatform.h"
+os = HOST_OS
+arch = HOST_ARCH
+compilerName = "ghc"
+compilerVersionRaw = __GLASGOW_HASKELL__
 
-
-
-
-
-
-
-
-
-
-
-
-                                                                                                            
-
-
-
-
-
-
-
-                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-                                                         
-
-
-
-
-
-
-
-
-
-
-
-os = "linux"
-arch = "x86_64"
+#elif defined(__HUGS__)
+#include "platform.h"
+os = HOST_OS
+arch = HOST_ARCH
 compilerName = "hugs"
 compilerVersionRaw = 0  -- ToDo
 
-
-
-
+#else
+#error Unknown compiler name
+#endif

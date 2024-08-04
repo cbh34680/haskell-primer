@@ -24,62 +24,7 @@ import Prelude
 import Control.Concurrent.MVar
 import Data.Typeable
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#include "Typeable.h"
 
 -- General semaphores are also implemented readily in terms of shared
 -- @MVar@s, only have to catch the case when the semaphore is tried
@@ -92,7 +37,7 @@ import Data.Typeable
 -- \"quantity\" is always dealt with in units of one.
 newtype QSem = QSem (MVar (Int, [MVar ()]))
 
-qSemTc = mkTyCon "QSem"; instance Typeable QSem where { typeOf _ = mkTyConApp qSemTc [] }
+INSTANCE_TYPEABLE0(QSem,qSemTc,"QSem")
 
 -- |Build a new 'QSem'
 newQSem :: Int -> IO QSem

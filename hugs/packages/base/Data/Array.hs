@@ -57,20 +57,20 @@ module  Data.Array
 
 import Data.Ix
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Arr		        -- Most of the hard work is done here
+import Data.Generics.Basics     -- To provide a Data instance
+import Data.Generics.Instances  -- To provide a Data instance
+import GHC.Err ( error )        -- Needed for Data instance
+#endif
 
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Array
+#endif
 
-
-
-
-
+#ifdef __NHC__
+import Array		-- Haskell'98 arrays
+#endif
 
 import Data.Typeable
 

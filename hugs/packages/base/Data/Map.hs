@@ -181,11 +181,11 @@ import Debug.QuickCheck
 import List(nub,sort)    
 -}
 
-
-
-
-
-
+#if __GLASGOW_HASKELL__
+import Text.Read
+import Data.Generics.Basics
+import Data.Generics.Instances
+#endif
 
 {--------------------------------------------------------------------
   Operators
@@ -215,23 +215,23 @@ instance (Ord k) => Monoid (Map k v) where
     mappend = union
     mconcat = unions
 
+#if __GLASGOW_HASKELL__
 
+{--------------------------------------------------------------------
+  A Data instance  
+--------------------------------------------------------------------}
 
+-- This instance preserves data abstraction at the cost of inefficiency.
+-- We omit reflection services for the sake of data abstraction.
 
+instance (Data k, Data a, Ord k) => Data (Map k a) where
+  gfoldl f z map = z fromList `f` (toList map)
+  toConstr _     = error "toConstr"
+  gunfold _ _    = error "gunfold"
+  dataTypeOf _   = mkNorepType "Data.Map.Map"
+  dataCast2 f    = gcast2 f
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 {--------------------------------------------------------------------
   Query
@@ -1475,19 +1475,19 @@ instance Foldable (Map k) where
   Read
 --------------------------------------------------------------------}
 instance (Ord k, Read k, Read e) => Read (Map k e) where
+#ifdef __GLASGOW_HASKELL__
+  readPrec = parens $ prec 10 $ do
+    Ident "fromList" <- lexP
+    xs <- readPrec
+    return (fromList xs)
 
-
-
-
-
-
-
-
+  readListPrec = readListPrecDefault
+#else
   readsPrec p = readParen (p > 10) $ \ r -> do
     ("fromList",s) <- lex r
     (xs,t) <- reads s
     return (fromList xs,t)
-
+#endif
 
 -- parses a pair of things with the syntax a:=b
 readPair :: (Read a, Read b) => ReadS (a,b)
@@ -1610,63 +1610,8 @@ withEmpty bars = "   ":bars
   Typeable
 --------------------------------------------------------------------}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-mapTc = mkTyCon "Map"; instance Typeable2 Map where { typeOf2 _ = mkTyConApp mapTc [] }; instance Typeable a => Typeable1 (Map a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (Map a b) where {   typeOf = typeOfDefault }
+#include "Typeable.h"
+INSTANCE_TYPEABLE2(Map,mapTc,"Map")
 
 {--------------------------------------------------------------------
   Assertions

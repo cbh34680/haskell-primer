@@ -30,29 +30,29 @@ module Text.Read (
    readParen, 		-- :: Bool -> ReadS a -> ReadS a
    lex,			-- :: ReadS String
 
-
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
    -- * New parsing functions
    module Text.ParserCombinators.ReadPrec,
    L.Lexeme(..),	
    lexP,		-- :: ReadPrec Lexeme
    parens,		-- :: ReadPrec a -> ReadPrec a
-
-
-
-
-
+#endif
+#ifdef __GLASGOW_HASKELL__
+   readListDefault,	-- :: Read a => ReadS [a]
+   readListPrecDefault,	-- :: Read a => ReadPrec [a]
+#endif
 
  ) where
 
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Read
+#endif   
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 import Text.ParserCombinators.ReadPrec
 import qualified Text.Read.Lex as L
+#endif   
 
-
-
+#ifdef __HUGS__
 -- copied from GHC.Read
 
 lexP :: ReadPrec L.Lexeme
@@ -67,4 +67,4 @@ parens p = optional
     x          <- reset optional
     L.Punc ")" <- lexP
     return x
-
+#endif

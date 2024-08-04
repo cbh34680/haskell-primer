@@ -27,89 +27,34 @@ import Data.Int
 import Data.Word
 import Data.Typeable
 
-
+#ifdef __HUGS__
 import Hugs.IOArray
-
+#endif
 
 import Control.Monad.ST		( RealWorld, stToIO )
 import Foreign.Ptr		( Ptr, FunPtr )
 import Foreign.StablePtr	( StablePtr )
 import Data.Array.Base
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.IOBase
+import GHC.Base
+#endif /* __GLASGOW_HASKELL__ */
 
+#include "Typeable.h"
 
-
-
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-iOArrayTc = mkTyCon "IOArray"; instance Typeable2 IOArray where { typeOf2 _ = mkTyConApp iOArrayTc [] }; instance Typeable a => Typeable1 (IOArray a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (IOArray a b) where {   typeOf = typeOfDefault }
+INSTANCE_TYPEABLE2(IOArray,iOArrayTc,"IOArray")
 
 -----------------------------------------------------------------------------
 -- | Instance declarations for 'IOArray's
 
 instance MArray IOArray e IO where
-
+#if defined(__HUGS__)
     getBounds   = return . boundsIOArray
-
-
-
-
+#elif defined(__GLASGOW_HASKELL__)
+    {-# INLINE getBounds #-}
+    getBounds (IOArray marr) = stToIO $ getBounds marr
+#endif
     newArray    = newIOArray
     unsafeRead  = unsafeReadIOArray
     unsafeWrite = unsafeWriteIOArray
@@ -127,7 +72,7 @@ instance MArray IOArray e IO where
 --
 newtype IOUArray i e = IOUArray (STUArray RealWorld i e)
 
-iOUArrayTc = mkTyCon "IOUArray"; instance Typeable2 IOUArray where { typeOf2 _ = mkTyConApp iOUArrayTc [] }; instance Typeable a => Typeable1 (IOUArray a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (IOUArray a b) where {   typeOf = typeOfDefault }
+INSTANCE_TYPEABLE2(IOUArray,iOUArrayTc,"IOUArray")
 
 instance MArray IOUArray Bool IO where
     {-# INLINE getBounds #-}

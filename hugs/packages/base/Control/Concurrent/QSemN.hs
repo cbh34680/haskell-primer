@@ -26,68 +26,13 @@ import Prelude
 import Control.Concurrent.MVar
 import Data.Typeable
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#include "Typeable.h"
 
 -- |A 'QSemN' is a quantity semaphore, in which the available
 -- \"quantity\" may be signalled or waited for in arbitrary amounts.
 newtype QSemN = QSemN (MVar (Int,[(Int,MVar ())]))
 
-qSemNTc = mkTyCon "QSemN"; instance Typeable QSemN where { typeOf _ = mkTyConApp qSemNTc [] }
+INSTANCE_TYPEABLE0(QSemN,qSemNTc,"QSemN")
 
 -- |Build a new 'QSemN' with a supplied initial quantity.
 newQSemN :: Int -> IO QSemN 

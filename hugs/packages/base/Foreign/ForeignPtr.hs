@@ -20,22 +20,22 @@ module Foreign.ForeignPtr
 	-- * Finalised data pointers
 	  ForeignPtr
 	, FinalizerPtr
-
+#if defined(__HUGS__) || defined(__GLASGOW_HASKELL__)
 	, FinalizerEnvPtr
-
+#endif
 	-- ** Basic operations
         , newForeignPtr
         , newForeignPtr_
         , addForeignPtrFinalizer
-
+#if defined(__HUGS__) || defined(__GLASGOW_HASKELL__)
 	, newForeignPtrEnv
 	, addForeignPtrFinalizerEnv
-
+#endif
 	, withForeignPtr
 
-
-
-
+#ifdef __GLASGOW_HASKELL__
+	, finalizeForeignPtr
+#endif
 
 	-- ** Low-level operations
 	, unsafeForeignPtrToPtr
@@ -52,39 +52,39 @@ module Foreign.ForeignPtr
 
 import Foreign.Ptr
 
+#ifdef __NHC__
+import NHC.FFI
+  ( ForeignPtr
+  , FinalizerPtr
+  , newForeignPtr
+  , newForeignPtr_
+  , addForeignPtrFinalizer
+  , withForeignPtr
+  , unsafeForeignPtrToPtr
+  , touchForeignPtr
+  , castForeignPtr
+  , Storable(sizeOf)
+  , malloc, mallocBytes, finalizerFree
+  )
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.ForeignPtr
+#endif
 
-
-
+#ifndef __NHC__
 import Foreign.Storable	( Storable(sizeOf) )
+#endif
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.IOBase
+import GHC.Num
+import GHC.Err		( undefined )
+import GHC.ForeignPtr
+#endif
 
-
-
-
-
-
-
-
-
-
+#if !defined(__NHC__) && !defined(__GLASGOW_HASKELL__)
 import Foreign.Marshal.Alloc	( malloc, mallocBytes, finalizerFree )
 
 instance Eq (ForeignPtr a) where 
@@ -95,10 +95,10 @@ instance Ord (ForeignPtr a) where
 
 instance Show (ForeignPtr a) where
     showsPrec p f = showsPrec p (unsafeForeignPtrToPtr f)
+#endif
 
 
-
-
+#ifndef __NHC__
 newForeignPtr :: FinalizerPtr a -> Ptr a -> IO (ForeignPtr a)
 -- ^Turns a plain memory reference into a foreign pointer, and
 -- associates a finaliser with the reference.  The finaliser will be executed
@@ -136,9 +136,9 @@ withForeignPtr fo io
   = do r <- io (unsafeForeignPtrToPtr fo)
        touchForeignPtr fo
        return r
+#endif /* ! __NHC__ */
 
-
-
+#if defined(__HUGS__) || defined(__GLASGOW_HASKELL__)
 -- | This variant of 'newForeignPtr' adds a finalizer that expects an
 -- environment in addition to the finalized pointer.  The environment
 -- that will be passed to the finalizer is fixed by the second argument to
@@ -149,27 +149,27 @@ newForeignPtrEnv finalizer env p
   = do fObj <- newForeignPtr_ p
        addForeignPtrFinalizerEnv finalizer env fObj
        return fObj
+#endif /* __HUGS__ */
+
+#ifdef __GLASGOW_HASKELL__
+type FinalizerEnvPtr env a = FunPtr (Ptr env -> Ptr a -> IO ())
+
+-- | like 'addForeignPtrFinalizerEnv' but allows the finalizer to be
+-- passed an additional environment parameter to be passed to the
+-- finalizer.  The environment passed to the finalizer is fixed by the
+-- second argument to 'addForeignPtrFinalizerEnv'
+addForeignPtrFinalizerEnv ::
+  FinalizerEnvPtr env a -> Ptr env -> ForeignPtr a -> IO ()
+addForeignPtrFinalizerEnv finalizer env fptr = 
+  addForeignPtrConcFinalizer fptr 
+	(mkFinalizerEnv finalizer env (unsafeForeignPtrToPtr fptr))
+
+foreign import ccall "dynamic" 
+  mkFinalizerEnv :: FinalizerEnvPtr env a -> Ptr env -> Ptr a -> IO ()
+#endif
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifndef __GLASGOW_HASKELL__
 mallocForeignPtr :: Storable a => IO (ForeignPtr a)
 mallocForeignPtr = do
   r <- malloc
@@ -179,7 +179,7 @@ mallocForeignPtrBytes :: Int -> IO (ForeignPtr a)
 mallocForeignPtrBytes n = do
   r <- mallocBytes n
   newForeignPtr finalizerFree r
-
+#endif /* !__GLASGOW_HASKELL__ */
 
 -- | This function is similar to 'Foreign.Marshal.Array.mallocArray',
 -- but yields a memory area that has a finalizer attached that releases

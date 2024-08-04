@@ -43,18 +43,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -}
 
 module Distribution.Simple.Install (
 	install,
-
-
-
+#ifdef DEBUG        
+        hunitTests
+#endif
   ) where
 
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ && __GLASGOW_HASKELL__ < 604
+#if __GLASGOW_HASKELL__ < 603
+#include "config.h"
+#else
+#include "ghcconfig.h"
+#endif
+#endif
 
 import Distribution.PackageDescription (
 	PackageDescription(..),
@@ -77,9 +77,9 @@ import Control.Monad(when)
 import Distribution.Compat.Directory(createDirectoryIfMissing, doesDirectoryExist)
 import Distribution.Compat.FilePath(splitFileName,joinFileName)
 
-
-
-
+#ifdef DEBUG
+import HUnit (Test)
+#endif
 
 -- |FIX: nhc isn't implemented yet.
 install :: PackageDescription
@@ -127,7 +127,7 @@ install pkg_descr lbi (CopyFlags copydest verbose) = do
 -- ------------------------------------------------------------
 -- * Testing
 -- ------------------------------------------------------------
-
-
-
-
+#ifdef DEBUG
+hunitTests :: [Test]
+hunitTests = []
+#endif

@@ -24,10 +24,10 @@ import Prelude
 import Control.Concurrent.MVar
 import System.IO.Unsafe (unsafePerformIO)
 
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.Num 	( Integer(..) )
+#endif
 
 -- | An abstract unique object.  Objects of type 'Unique' may be
 -- compared for equality and ordering and hashed into 'Int'.
@@ -52,10 +52,10 @@ newUnique = do
 -- same value, although in practice this is unlikely.  The 'Int'
 -- returned makes a good hash key.
 hashUnique :: Unique -> Int
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__ 
+hashUnique (Unique (S# i))   = I# i
+hashUnique (Unique (J# s d)) | s ==# 0#  = 0
+			     | otherwise = I# (indexIntArray# d 0#)
+#else
 hashUnique (Unique u) = fromInteger (u `mod` (toInteger (maxBound :: Int) + 1))
-
+#endif

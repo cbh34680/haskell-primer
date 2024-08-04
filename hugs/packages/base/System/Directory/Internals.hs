@@ -22,10 +22,10 @@ module System.Directory.Internals (
 	exeExtension,
   ) where
 
-
-
-
-
+#if __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.IOBase (FilePath)
+#endif
 import Data.List
 
 -- | The 'joinFileName' function is the opposite of 'splitFileName'. 
@@ -91,13 +91,13 @@ pathParents :: FilePath -> [FilePath]
 pathParents p =
     root'' : map ((++) root') (dropEmptyPath $ inits path')
     where
-
-
-
-
-
+#ifdef mingw32_HOST_OS
+       (root,path) = case break (== ':') p of
+          (path,    "") -> ("",path)
+          (root,_:path) -> (root++":",path)
+#else
        (root,path) = ("",p)
-
+#endif
        (root',root'',path') = case path of
          (c:path) | isPathSeparator c -> (root++[pathSeparator],root++[pathSeparator],path)
          _                            -> (root                 ,root++"."            ,path)
@@ -134,9 +134,9 @@ parseSearchPath path = split path
       where
         chunk = 
           case chunk' of
-
-
-
+#ifdef mingw32_HOST_OS
+            ('\"':xs@(_:_)) | last xs == '\"' -> init xs
+#endif
             _                                 -> chunk'
     
         (chunk', rest') = break (==searchPathSeparator) s
@@ -157,30 +157,30 @@ isPathSeparator ch = ch == pathSeparator || ch == '/'
 -- separator is a slash (@\"\/\"@) on Unix and Macintosh, and a backslash
 -- (@\"\\\"@) on the Windows operating system.
 pathSeparator :: Char
-
-
-
+#ifdef mingw32_HOST_OS
+pathSeparator = '\\'
+#else
 pathSeparator = '/'
-
+#endif
 
 -- ToDo: This should be determined via autoconf (PATH_SEPARATOR)
 -- | A platform-specific character used to separate search path strings in
 -- environment variables. The separator is a colon (@\":\"@) on Unix and
 -- Macintosh, and a semicolon (@\";\"@) on the Windows operating system.
 searchPathSeparator :: Char
-
-
-
+#ifdef mingw32_HOST_OS
+searchPathSeparator = ';'
+#else
 searchPathSeparator = ':'
-
+#endif
 
 -- ToDo: This should be determined via autoconf (AC_EXEEXT)
 -- | Extension for executable files
 -- (typically @\"\"@ on Unix and @\"exe\"@ on Windows or OS\/2)
 exeExtension :: String
-
-
-
+#ifdef mingw32_HOST_OS
+exeExtension = "exe"
+#else
 exeExtension = ""
-
+#endif
 

@@ -42,9 +42,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -}
 
 module Distribution.Simple.Build (
 	build
-
-
-
+#ifdef DEBUG        
+        ,hunitTests
+#endif
   ) where
 
 import Distribution.Compiler	( Compiler(..), CompilerFlavor(..) )
@@ -77,13 +77,13 @@ import qualified Distribution.Simple.JHC  as JHC
 -- import qualified Distribution.Simple.NHC  as NHC
 import qualified Distribution.Simple.Hugs as Hugs
 
+#ifdef mingw32_HOST_OS
+import Distribution.PackageDescription (hasLibs)
+#endif
 
-
-
-
-
-
-
+#ifdef DEBUG
+import HUnit (Test)
+#endif
 
 -- -----------------------------------------------------------------------------
 -- Build the library
@@ -207,11 +207,11 @@ buildPathsModule pkg_descr lbi =
 	mkGetDir dir (Just dirrel) = "getPrefixDirRel " ++ show dirrel
 	mkGetDir dir Nothing       = "return " ++ show dir
 
-
-
-
+#if mingw32_HOST_OS
+	absolute = hasLibs pkg_descr || flat_bindirrel == Nothing
+#else
 	absolute = True
-
+#endif
 
   	paths_modulename = autogenModuleName pkg_descr
 	paths_filename = paths_modulename ++ ".hs"
@@ -276,7 +276,7 @@ get_prefix_stuff =
 -- * Testing
 -- ------------------------------------------------------------
 
-
-
-
-
+#ifdef DEBUG
+hunitTests :: [Test]
+hunitTests = []
+#endif

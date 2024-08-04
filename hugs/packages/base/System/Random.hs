@@ -44,13 +44,13 @@ module System.Random
 
 import Prelude
 
-
-
-
-
+#ifdef __NHC__
+import CPUTime		( getCPUTime )
+import Foreign.Ptr      ( Ptr, nullPtr )
+#else
 import System.CPUTime	( getCPUTime )
 import System.Time	( getClockTime, ClockTime(..) )
-
+#endif
 import Data.Char	( isSpace, chr, ord )
 import System.IO.Unsafe ( unsafePerformIO )
 import Data.IORef
@@ -59,12 +59,12 @@ import Numeric		( readDec )
 -- The standard nhc98 implementation of Time.ClockTime does not match
 -- the extended one expected in this module, so we lash-up a quick
 -- replacement here.
-
-
-
-
-
-
+#ifdef __NHC__
+data ClockTime = TOD Integer ()
+foreign import ccall "time.h time" readtime :: Ptr () -> IO Int
+getClockTime :: IO ClockTime
+getClockTime = do t <- readtime nullPtr;  return (TOD (toInteger t) ())
+#endif
 
 {- $intro
 

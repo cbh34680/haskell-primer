@@ -58,9 +58,9 @@ module Data.Sequence (
 	splitAt,	-- :: Int -> Seq a -> (Seq a, Seq a)
 	-- * Transformations
 	reverse,	-- :: Seq a -> Seq a
-
-
-
+#if TESTING
+	valid,
+#endif
 	) where
 
 import Prelude hiding (
@@ -74,17 +74,17 @@ import Data.Foldable
 import Data.Traversable
 import Data.Typeable
 
+#ifdef __GLASGOW_HASKELL__
+import Text.Read (Lexeme(Ident), lexP, parens, prec,
+	readPrec, readListPrec, readListPrecDefault)
+import Data.Generics.Basics (Data(..), Fixity(..),
+			constrIndex, mkConstr, mkDataType)
+#endif
 
-
-
-
-
-
-
-
-
-
-
+#if TESTING
+import Control.Monad (liftM, liftM3, liftM4)
+import Test.QuickCheck
+#endif
 
 infixr 5 `consTree`
 infixl 5 `snocTree`
@@ -130,115 +130,60 @@ instance Eq a => Eq (Seq a) where
 instance Ord a => Ord (Seq a) where
 	compare xs ys = compare (toList xs) (toList ys)
 
-
-
-
-
+#if TESTING
+instance Show a => Show (Seq a) where
+	showsPrec p (Seq x) = showsPrec p x
+#else
 instance Show a => Show (Seq a) where
 	showsPrec p xs = showParen (p > 10) $
 		showString "fromList " . shows (toList xs)
-
+#endif
 
 instance Read a => Read (Seq a) where
+#ifdef __GLASGOW_HASKELL__
+	readPrec = parens $ prec 10 $ do
+		Ident "fromList" <- lexP
+		xs <- readPrec
+		return (fromList xs)
 
-
-
-
-
-
-
-
+	readListPrec = readListPrecDefault
+#else
 	readsPrec p = readParen (p > 10) $ \ r -> do
 		("fromList",s) <- lex r
 		(xs,t) <- reads s
 		return (fromList xs,t)
-
+#endif
 
 instance Monoid (Seq a) where
 	mempty = empty
 	mappend = (><)
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-seqTc = mkTyCon "Seq"; instance Typeable1 Seq where { typeOf1 _ = mkTyConApp seqTc [] }; instance Typeable a => Typeable (Seq a) where { typeOf = typeOfDefault }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#include "Typeable.h"
+INSTANCE_TYPEABLE1(Seq,seqTc,"Seq")
+
+#if __GLASGOW_HASKELL__
+instance Data a => Data (Seq a) where
+	gfoldl f z s	= case viewl s of
+		EmptyL	-> z empty
+		x :< xs -> z (<|) `f` x `f` xs
+
+	gunfold k z c	= case constrIndex c of
+		1 -> z empty
+		2 -> k (k (z (<|)))
+		_ -> error "gunfold"
+
+	toConstr xs
+	  | null xs	= emptyConstr
+	  | otherwise	= consConstr
+
+	dataTypeOf _	= seqDataType
+
+	dataCast1 f	= gcast1 f
+
+emptyConstr = mkConstr seqDataType "empty" [] Prefix
+consConstr  = mkConstr seqDataType "<|" [] Infix
+seqDataType = mkDataType "Data.Sequence.Seq" [emptyConstr, consConstr]
+#endif
 
 -- Finger trees
 
@@ -246,9 +191,9 @@ data FingerTree a
 	= Empty
 	| Single a
 	| Deep {-# UNPACK #-} !Int !(Digit a) (FingerTree (Node a)) !(Digit a)
-
-
-
+#if TESTING
+	deriving Show
+#endif
 
 instance Sized a => Sized (FingerTree a) where
 	{-# SPECIALIZE instance Sized (FingerTree (Elem a)) #-}
@@ -304,9 +249,9 @@ data Digit a
 	| Two a a
 	| Three a a a
 	| Four a a a a
-
-
-
+#if TESTING
+	deriving Show
+#endif
 
 instance Foldable Digit where
 	foldr f z (One a) = a `f` z
@@ -356,9 +301,9 @@ digitToTree (Four a b c d) = deep (Two a b) Empty (Two c d)
 data Node a
 	= Node2 {-# UNPACK #-} !Int a a
 	| Node3 {-# UNPACK #-} !Int a a a
-
-
-
+#if TESTING
+	deriving Show
+#endif
 
 instance Foldable Node where
 	foldr f z (Node2 _ a b) = a `f` (b `f` z)
@@ -411,10 +356,10 @@ instance Foldable Elem where
 instance Traversable Elem where
 	traverse f (Elem x) = Elem <$> f x
 
-
-
-
-
+#ifdef TESTING
+instance (Show a) => Show (Elem a) where
+	showsPrec p (Elem x) = showsPrec p x
+#endif
 
 ------------------------------------------------------------------------
 -- Construction
@@ -723,21 +668,21 @@ data Maybe2 a b = Nothing2 | Just2 a b
 data ViewL a
 	= EmptyL	-- ^ empty sequence
 	| a :< Seq a	-- ^ leftmost element and the rest of the sequence
-
-
-
-
+#ifndef __HADDOCK__
+# if __GLASGOW_HASKELL__
+	deriving (Eq, Ord, Show, Read, Data)
+# else
 	deriving (Eq, Ord, Show, Read)
+# endif
+#else
+instance Eq a => Eq (ViewL a)
+instance Ord a => Ord (ViewL a)
+instance Show a => Show (ViewL a)
+instance Read a => Read (ViewL a)
+instance Data a => Data (ViewL a)
+#endif
 
-
-
-
-
-
-
-
-
-viewLTc = mkTyCon "ViewL"; instance Typeable1 ViewL where { typeOf1 _ = mkTyConApp viewLTc [] }; instance Typeable a => Typeable (ViewL a) where { typeOf = typeOfDefault }
+INSTANCE_TYPEABLE1(ViewL,viewLTc,"ViewL")
 
 instance Functor ViewL where
 	fmap = fmapDefault
@@ -782,21 +727,21 @@ data ViewR a
 	= EmptyR	-- ^ empty sequence
 	| Seq a :> a	-- ^ the sequence minus the rightmost element,
 			-- and the rightmost element
-
-
-
-
+#ifndef __HADDOCK__
+# if __GLASGOW_HASKELL__
+	deriving (Eq, Ord, Show, Read, Data)
+# else
 	deriving (Eq, Ord, Show, Read)
+# endif
+#else
+instance Eq a => Eq (ViewR a)
+instance Ord a => Ord (ViewR a)
+instance Show a => Show (ViewR a)
+instance Read a => Read (ViewR a)
+instance Data a => Data (ViewR a)
+#endif
 
-
-
-
-
-
-
-
-
-viewRTc = mkTyCon "ViewR"; instance Typeable1 ViewR where { typeOf1 _ = mkTyConApp viewRTc [] }; instance Typeable a => Typeable (ViewR a) where { typeOf = typeOfDefault }
+INSTANCE_TYPEABLE1(ViewR,viewRTc,"ViewR")
 
 instance Functor ViewR where
 	fmap = fmapDefault
@@ -846,9 +791,9 @@ index (Seq xs) i
   | otherwise	= error "index out of bounds"
 
 data Place a = Place {-# UNPACK #-} !Int a
-
-
-
+#if TESTING
+	deriving Show
+#endif
 
 {-# SPECIALIZE lookupTree :: Int -> FingerTree (Elem a) -> Place (Elem a) #-}
 {-# SPECIALIZE lookupTree :: Int -> FingerTree (Node a) -> Place (Node a) #-}
@@ -984,9 +929,9 @@ split i xs
   where Split l x r = splitTree i xs
 
 data Split t a = Split t a t
-
-
-
+#if TESTING
+	deriving Show
+#endif
 
 {-# SPECIALIZE splitTree :: Int -> FingerTree (Elem a) -> Split (FingerTree (Elem a)) (Elem a) #-}
 {-# SPECIALIZE splitTree :: Int -> FingerTree (Node a) -> Split (FingerTree (Node a)) (Node a) #-}
@@ -1092,83 +1037,83 @@ reverseNode :: (a -> a) -> Node a -> Node a
 reverseNode f (Node2 s a b) = Node2 s (f b) (f a)
 reverseNode f (Node3 s a b c) = Node3 s (f c) (f b) (f a)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if TESTING
+
+------------------------------------------------------------------------
+-- QuickCheck
+------------------------------------------------------------------------
+
+instance Arbitrary a => Arbitrary (Seq a) where
+	arbitrary = liftM Seq arbitrary
+	coarbitrary (Seq x) = coarbitrary x
+
+instance Arbitrary a => Arbitrary (Elem a) where
+	arbitrary = liftM Elem arbitrary
+	coarbitrary (Elem x) = coarbitrary x
+
+instance (Arbitrary a, Sized a) => Arbitrary (FingerTree a) where
+	arbitrary = sized arb
+	  where arb :: (Arbitrary a, Sized a) => Int -> Gen (FingerTree a)
+		arb 0 = return Empty
+		arb 1 = liftM Single arbitrary
+		arb n = liftM3 deep arbitrary (arb (n `div` 2)) arbitrary
+
+	coarbitrary Empty = variant 0
+	coarbitrary (Single x) = variant 1 . coarbitrary x
+	coarbitrary (Deep _ pr m sf) =
+		variant 2 . coarbitrary pr . coarbitrary m . coarbitrary sf
+
+instance (Arbitrary a, Sized a) => Arbitrary (Node a) where
+	arbitrary = oneof [
+			liftM2 node2 arbitrary arbitrary,
+			liftM3 node3 arbitrary arbitrary arbitrary]
+
+	coarbitrary (Node2 _ a b) = variant 0 . coarbitrary a . coarbitrary b
+	coarbitrary (Node3 _ a b c) =
+		variant 1 . coarbitrary a . coarbitrary b . coarbitrary c
+
+instance Arbitrary a => Arbitrary (Digit a) where
+	arbitrary = oneof [
+			liftM One arbitrary,
+			liftM2 Two arbitrary arbitrary,
+			liftM3 Three arbitrary arbitrary arbitrary,
+			liftM4 Four arbitrary arbitrary arbitrary arbitrary]
+
+	coarbitrary (One a) = variant 0 . coarbitrary a
+	coarbitrary (Two a b) = variant 1 . coarbitrary a . coarbitrary b
+	coarbitrary (Three a b c) =
+		variant 2 . coarbitrary a . coarbitrary b . coarbitrary c
+	coarbitrary (Four a b c d) =
+		variant 3 . coarbitrary a . coarbitrary b . coarbitrary c . coarbitrary d
+
+------------------------------------------------------------------------
+-- Valid trees
+------------------------------------------------------------------------
+
+class Valid a where
+	valid :: a -> Bool
+
+instance Valid (Elem a) where
+	valid _ = True
+
+instance Valid (Seq a) where
+	valid (Seq xs) = valid xs
+
+instance (Sized a, Valid a) => Valid (FingerTree a) where
+	valid Empty = True
+	valid (Single x) = valid x
+	valid (Deep s pr m sf) =
+		s == size pr + size m + size sf && valid pr && valid m && valid sf
+
+instance (Sized a, Valid a) => Valid (Node a) where
+	valid (Node2 s a b) = s == size a + size b && valid a && valid b
+	valid (Node3 s a b c) =
+		s == size a + size b + size c && valid a && valid b && valid c
+
+instance Valid a => Valid (Digit a) where
+	valid (One a) = valid a
+	valid (Two a b) = valid a && valid b
+	valid (Three a b c) = valid a && valid b && valid c
+	valid (Four a b c d) = valid a && valid b && valid c && valid d
+
+#endif

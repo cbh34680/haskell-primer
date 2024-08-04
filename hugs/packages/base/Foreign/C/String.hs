@@ -95,16 +95,16 @@ import Foreign.Storable
 
 import Data.Word
 
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.List
+import GHC.Real
+import GHC.Num
+import GHC.IOBase
+import GHC.Base
+#else
 import Data.Char ( chr, ord )
-
-
+#define unsafeChr chr
+#endif
 
 -----------------------------------------------------------------------------
 -- Strings
@@ -193,7 +193,7 @@ charIsRepresentable c = return (ord c < 256)
 -- | Convert a C byte, representing a Latin-1 character, to the corresponding
 -- Haskell character.
 castCCharToChar :: CChar -> Char
-castCCharToChar ch = chr (fromIntegral (fromIntegral ch :: Word8))
+castCCharToChar ch = unsafeChr (fromIntegral (fromIntegral ch :: Word8))
 
 -- | Convert a Haskell character to a C character.
 -- This function is only safe on the first 256 characters.
@@ -203,41 +203,41 @@ castCharToCChar ch = fromIntegral (ord ch)
 -- | Marshal a NUL terminated C string into a Haskell string.
 --
 peekCAString    :: CString -> IO String
-
+#ifndef __GLASGOW_HASKELL__
 peekCAString cp  = do
   cs <- peekArray0 nUL cp
   return (cCharsToChars cs)
-
-
-
-
-
-
-
-
-
-
+#else
+peekCAString cp = do
+  l <- lengthArray0 nUL cp
+  if l <= 0 then return "" else loop "" (l-1)
+  where
+    loop s i = do
+        xval <- peekElemOff cp i
+	let val = castCCharToChar xval
+	val `seq` if i <= 0 then return (val:s) else loop (val:s) (i-1)
+#endif
 
 -- | Marshal a C string with explicit length into a Haskell string.
 --
 peekCAStringLen           :: CStringLen -> IO String
-
+#ifndef __GLASGOW_HASKELL__
 peekCAStringLen (cp, len)  = do
   cs <- peekArray len cp
   return (cCharsToChars cs)
-
-
-
-
-
-
-
-
-
-
-
-
-
+#else
+peekCAStringLen (cp, len) 
+  | len <= 0  = return "" -- being (too?) nice.
+  | otherwise = loop [] (len-1)
+  where
+    loop acc i = do
+         xval <- peekElemOff cp i
+	 let val = castCCharToChar xval
+	   -- blow away the coercion ASAP.
+	 if (val `seq` (i == 0))
+	  then return (val:acc)
+	  else loop (val:acc) (i-1)
+#endif
 
 -- | Marshal a Haskell string into a NUL terminated C string.
 --
@@ -248,17 +248,17 @@ peekCAStringLen (cp, len)  = do
 --   'Foreign.Marshal.Alloc.finalizerFree'.
 --
 newCAString :: String -> IO CString
-
+#ifndef __GLASGOW_HASKELL__
 newCAString  = newArray0 nUL . charsToCChars
-
-
-
-
-
-
-
-
-
+#else
+newCAString str = do
+  ptr <- mallocArray0 (length str)
+  let
+	go [] n     = pokeElemOff ptr n nUL
+    	go (c:cs) n = do pokeElemOff ptr n (castCharToCChar c); go cs (n+1)
+  go str 0
+  return ptr
+#endif
 
 -- | Marshal a Haskell string into a C string (ie, character array) with
 -- explicit length information.
@@ -268,21 +268,21 @@ newCAString  = newArray0 nUL . charsToCChars
 --   'Foreign.Marshal.Alloc.finalizerFree'.
 --
 newCAStringLen     :: String -> IO CStringLen
-
+#ifndef __GLASGOW_HASKELL__
 newCAStringLen str  = do
   a <- newArray (charsToCChars str)
   return (pairLength str a)
-
-
-
-
-
-
-
-
-
-
-
+#else
+newCAStringLen str = do
+  ptr <- mallocArray0 len
+  let
+	go [] n     = n `seq` return ()	-- make it strict in n
+    	go (c:cs) n = do pokeElemOff ptr n (castCharToCChar c); go cs (n+1)
+  go str 0
+  return (ptr, len)
+  where
+    len = length str
+#endif
 
 -- | Marshal a Haskell string into a NUL terminated C string using temporary
 -- storage.
@@ -294,18 +294,18 @@ newCAStringLen str  = do
 --   storage must /not/ be used after this.
 --
 withCAString :: String -> (CString -> IO a) -> IO a
-
+#ifndef __GLASGOW_HASKELL__
 withCAString  = withArray0 nUL . charsToCChars
-
-
-
-
-
-
-
-
-
-
+#else
+withCAString str f =
+  allocaArray0 (length str) $ \ptr ->
+      let
+	go [] n     = pokeElemOff ptr n nUL
+    	go (c:cs) n = do pokeElemOff ptr n (castCharToCChar c); go cs (n+1)
+      in do
+      go str 0
+      f ptr
+#endif
 
 -- | Marshal a Haskell string into a C string (ie, character array)
 -- in temporary storage, with explicit length information.
@@ -315,20 +315,20 @@ withCAString  = withArray0 nUL . charsToCChars
 --   storage must /not/ be used after this.
 --
 withCAStringLen         :: String -> (CStringLen -> IO a) -> IO a
-
+#ifndef __GLASGOW_HASKELL__
 withCAStringLen str act  = withArray (charsToCChars str) $ act . pairLength str
-
-
-
-
-
-
-
-
-
-
-
-
+#else
+withCAStringLen str f =
+  allocaArray len $ \ptr ->
+      let
+	go [] n     = n `seq` return ()	-- make it strict in n
+    	go (c:cs) n = do pokeElemOff ptr n (castCharToCChar c); go cs (n+1)
+      in do
+      go str 0
+      f (ptr,len)
+  where
+    len = length str
+#endif
 
 -- auxiliary definitions
 -- ----------------------
@@ -343,7 +343,7 @@ nUL  = 0
 pairLength :: String -> a -> (a, Int)
 pairLength  = flip (,) . length
 
-
+#ifndef __GLASGOW_HASKELL__
 -- cast [CChar] to [Char]
 --
 cCharsToChars :: [CChar] -> [Char]
@@ -353,7 +353,7 @@ cCharsToChars xs  = map castCCharToChar xs
 --
 charsToCChars :: [Char] -> [CChar]
 charsToCChars xs  = map castCharToCChar xs
-
+#endif
 
 -----------------------------------------------------------------------------
 -- Wide strings
@@ -440,28 +440,28 @@ wNUL = 0
 cWcharsToChars :: [CWchar] -> [Char]
 charsToCWchars :: [Char] -> [CWchar]
 
+#ifdef mingw32_HOST_OS
 
+-- On Windows, wchar_t is 16 bits wide and CWString uses the UTF-16 encoding.
 
+-- coding errors generate Chars in the surrogate range
+cWcharsToChars = map chr . fromUTF16 . map fromIntegral
+ where
+  fromUTF16 (c1:c2:wcs)
+    | 0xd800 <= c1 && c1 <= 0xdbff && 0xdc00 <= c2 && c2 <= 0xdfff =
+      ((c1 - 0xd800)*0x400 + (c2 - 0xdc00) + 0x10000) : fromUTF16 wcs
+  fromUTF16 (c:wcs) = c : fromUTF16 wcs
+  fromUTF16 [] = []
 
+charsToCWchars = foldr utf16Char [] . map ord
+ where
+  utf16Char c wcs
+    | c < 0x10000 = fromIntegral c : wcs
+    | otherwise   = let c' = c - 0x10000 in
+                    fromIntegral (c' `div` 0x400 + 0xd800) :
+                    fromIntegral (c' `mod` 0x400 + 0xdc00) : wcs
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#else /* !mingw32_HOST_OS */
 
 cWcharsToChars xs  = map castCWcharToChar xs
 charsToCWchars xs  = map castCharToCWchar xs
@@ -475,4 +475,4 @@ castCWcharToChar ch = chr (fromIntegral ch )
 castCharToCWchar :: Char -> CWchar
 castCharToCWchar ch = fromIntegral (ord ch)
 
-
+#endif /* !mingw32_HOST_OS */

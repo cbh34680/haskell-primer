@@ -62,12 +62,12 @@ import Distribution.Package (PackageIdentifier(..), showPackageId)
 import Distribution.Compiler (Compiler(..), CompilerFlavor(..), showCompilerId)
 import Distribution.Setup (CopyDest(..))
 import Distribution.Compat.FilePath
-
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+import Data.Maybe (fromMaybe)
+import Distribution.PackageDescription (hasLibs)
+import Foreign
+import Foreign.C
+#endif
 
 -- |Data cached after configuration step.
 data LocalBuildInfo = LocalBuildInfo {
@@ -157,63 +157,63 @@ Unix:
 -}
 
 default_prefix :: IO String
-
-
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+# if __HUGS__
+default_prefix = return "C:\\Program Files"
+# else
+default_prefix = getProgramFilesDir
+# endif
+#else
 default_prefix = return "/usr/local"
+#endif
 
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+getProgramFilesDir = do
+  m <- shGetFolderPath csidl_PROGRAM_FILES
+  return (fromMaybe "C:\\Program Files" m)
 
+getCommonFilesDir = do
+  m <- shGetFolderPath csidl_PROGRAM_FILES_COMMON
+  case m of
+   Nothing -> getProgramFilesDir
+   Just s  -> return s
 
+shGetFolderPath id =
+  allocaBytes long_path_size $ \pPath -> do
+     r <- c_SHGetFolderPath nullPtr id nullPtr 0 pPath
+     if (r /= 0) 
+	then return Nothing
+	else do s <- peekCString pPath; return (Just s)
+  where
+    long_path_size      = 1024
 
+csidl_PROGRAM_FILES = 0x0026 :: CInt
+csidl_PROGRAM_FILES_COMMON = 0x002b :: CInt
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+foreign import stdcall unsafe "shlobj.h SHGetFolderPathA" 
+            c_SHGetFolderPath :: Ptr () 
+                              -> CInt 
+                              -> Ptr () 
+                              -> CInt 
+                              -> CString 
+                              -> IO CInt
+#endif
 
 default_bindir :: FilePath
 default_bindir = "$prefix" `joinFileName`
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+	"Haskell" `joinFileName` "bin"
+#else
 	"bin"
-
+#endif
 
 default_libdir :: Compiler -> FilePath
 default_libdir hc = "$prefix" `joinFileName`
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+                 "Haskell"
+#else
                  "lib"
-
+#endif
 
 default_libsubdir :: Compiler -> FilePath
 default_libsubdir hc =
@@ -224,20 +224,20 @@ default_libsubdir hc =
 
 default_libexecdir :: FilePath
 default_libexecdir = "$prefix" `joinFileName`
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+	"$pkgid"
+#else
 	"libexec"
-
+#endif
 
 default_datadir :: PackageDescription -> IO FilePath
 default_datadir pkg_descr
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+	| hasLibs pkg_descr = getCommonFilesDir
+	| otherwise = return ("$prefix" `joinFileName` "Haskell")
+#else
 	= return  ("$prefix" `joinFileName` "share")
-
+#endif
 
 default_datasubdir :: FilePath
 default_datasubdir = "$pkgid"

@@ -76,11 +76,11 @@ import Distribution.Compat.FilePath
 import Data.Char		( isSpace )
 import Data.Maybe		( mapMaybe )
 import Control.Monad		( unless, when, filterM )
-
+#ifndef __NHC__
 import Control.Exception	( try )
-
-
-
+#else
+import IO			( try )
+#endif
 import Data.List		( nub, sort, isSuffixOf )
 import System.Directory		( Permissions(..), getPermissions,
 				  setPermissions )
@@ -323,17 +323,17 @@ install verbose libDir installProgDir binDir targetProgDir buildPref pkg_descr =
         -- FIX (HUGS): use extensions, and options from file too?
         -- see http://hackage.haskell.org/trac/hackage/ticket/43
         let hugsOptions = hcOptions Hugs (options (buildInfo exe))
-
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+        let exeFile = binDir `joinFileName` exeName exe `joinFileExt` "bat"
+        let script = unlines [
+                "@echo off",
+                unwords ("runhugs" : hugsOptions ++ [targetName, "%*"])]
+#else
         let exeFile = binDir `joinFileName` exeName exe
         let script = unlines [
                 "#! /bin/sh",
                 unwords ("runhugs" : hugsOptions ++ [targetName, "\"$@\""])]
-
+#endif
         writeFile exeFile script
         perms <- getPermissions exeFile
         setPermissions exeFile perms { executable = True, readable = True }

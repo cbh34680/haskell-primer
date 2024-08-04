@@ -21,727 +21,7 @@
 -- #hide
 module System.Posix.Internals where
 
-                                                                              
-                                                                             
-
-                         
-
-
-                          
-
-
-                              
-
-
-                                 
-
-
-                        
-
-
-                                
-
-
-                          
-
-
-                            
-
-
-                         
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                          
-
-
-                         
-
-
-                                
-
-
-                                
-
-
-                              
-
-
-                           
-
-
-                                
-
-
-                          
-
-
-                        
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                             
-
-
-                                
-
-
-                         
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                          
-
-
-                       
-
-
-                           
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                            
-
-
-                             
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                               
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                               
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                             
-
-
-                            
-
-
-                          
-
-
-                         
-
-
-                              
-
-
-                         
-
-
-                                
-
-
-                         
-
-
-                            
-
-
-                                
-
-
-                                 
-
-
-                                
-
-
-                          
-
-
-                                   
-
-
-                              
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                                   
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                             
-
-
-                                
-
-
-                           
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                            
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                               
-
-
-                               
-
-
-                                                        
-
-
-                                                                                     
-
-
-                                                                                    
-                             
-
-                                                         
-
-
-                                                        
-
-
-                                                        
-
-
-                                                  
-
-
-                                                   
-
-
-                                                       
-
-
-                                                      
-                          
-
-                                                       
-
-
-                                                          
-
-
-                                                      
-
-
-                                                           
-
-
-                                                      
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                   
-
-
-                                                         
-
-
-                                                       
-
-
-                                                       
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                          
-
-
-                                                         
-
-
-                                                        
-
-
-                                                               
-
-
-                                                             
-
-
-                                                           
-
-
-                                                              
-
-
-                                                            
-
-
-                                                             
-                              
-
-                                                            
-
-
-                                                           
-
-
-                                                            
-
-
-                                                              
-
-
-                                                           
-
-
-                                                          
-
-
-                                                   
-
-
-                                                       
-
-
-                                                                                                         
-
-
-                                                                                         
-                        
-
-                                                         
-
-
-                                                        
-
-
-                                                   
-
-
-                                                        
-                         
-
-                                                         
-
-
-                                                          
-                           
-
-                                                          
-                           
-
-                                  
-
-
-                                   
-
-
-                                                     
-                         
-
-                                     
-
-
-                                     
-
-
-                                        
-
-
-                                      
-
-
-                                       
-
-
-                                      
-
-
-                                      
-
-
-                                      
-
-
-                                    
-
-
-                                         
-
-
-                                         
-
-
-                                     
-
-
-                                          
-
-
-                                       
-
-
-                                        
-
-
-                                      
-
-
-                                      
-
-
-                                          
-
-
-                                       
-
-
-                                      
-
-
-                                            
-
-
-                                             
-
-
-                                       
-
-
-                                        
-
-
-                                        
-
-
-                                         
-
-
-                                       
-
-
-                                      
-
-
-                                          
-
-
-                                          
-
-
-                                              
-
-
-                                             
-
-
-                                              
-
-
-                                                   
-
-
-                                               
-
-
-                                        
-
-
-                                       
-                         
-
-                                                                              
-
-
-                                              
-
-
-                                                          
-
-
-                                                          
-
-
-                                            
-
-
-                                           
-
-
-                                                      
-
-
-                                                                           
-
-
-                                                            
-                           
-
-                                                                       
-                              
-
-                                                 
-                         
-
-                                                            
-                  
-
-                                                       
-                  
-
-                                                
-                  
-
-
+#include "HsBaseConfig.h"
 
 import Control.Monad
 import System.Posix.Types
@@ -752,20 +32,20 @@ import Foreign.C
 import Data.Bits
 import Data.Maybe
 
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.Num
+import GHC.Real
+import GHC.IOBase
+#else
 import System.IO
+#endif
 
-
-
+#ifdef __HUGS__
 import Hugs.Prelude (IOException(..), IOErrorType(..))
 
 {-# CFILES cbits/PrelIOUtils.c cbits/dirUtils.c cbits/consUtils.c #-}
-
+#endif
 
 -- ---------------------------------------------------------------------------
 -- Types
@@ -785,9 +65,9 @@ type CTms	= ()
 type CUtimbuf   = ()
 type CUtsname   = ()
 
-
+#ifndef __GLASGOW_HASKELL__
 type FD = Int
-
+#endif
 
 -- ---------------------------------------------------------------------------
 -- stat()-related stuff
@@ -839,28 +119,28 @@ statGetType p_stat = do
 ioe_unknownfiletype = IOError Nothing UnsupportedOperation "fdType"
 			"unknown file type" Nothing
 
+#if __GLASGOW_HASKELL__ && (defined(mingw32_HOST_OS) || defined(__MINGW32__))
+closeFd :: Bool -> CInt -> IO CInt
+closeFd isStream fd 
+  | isStream  = c_closesocket fd
+  | otherwise = c_close fd
 
-
-
-
-
-
-
-
-
+foreign import stdcall unsafe "HsBase.h closesocket"
+   c_closesocket :: CInt -> IO CInt
+#endif
 
 fdGetMode :: Int -> IO IOMode
 fdGetMode fd = do
-
-
-
-
-
-
-
+#if defined(mingw32_HOST_OS) || defined(__MINGW32__)
+    -- XXX: this code is *BROKEN*, _setmode only deals with O_TEXT/O_BINARY
+    flags1 <- throwErrnoIfMinus1Retry "fdGetMode" 
+                (c__setmode (fromIntegral fd) (fromIntegral o_WRONLY))
+    flags  <- throwErrnoIfMinus1Retry "fdGetMode" 
+                (c__setmode (fromIntegral fd) (fromIntegral flags1))
+#else
     flags <- throwErrnoIfMinus1Retry "fdGetMode" 
 		(c_fcntl_read (fromIntegral fd) const_f_getfl)
-
+#endif
     let
        wH  = (flags .&. o_WRONLY) /= 0
        aH  = (flags .&. o_APPEND) /= 0
@@ -880,7 +160,7 @@ fdGetMode fd = do
 fdIsTTY :: Int -> IO Bool
 fdIsTTY fd = c_isatty (fromIntegral fd) >>= return.toBool
 
-
+#if defined(HTYPE_TCFLAG_T)
 
 setEcho :: Int -> Bool -> IO ()
 setEcho fd on = do
@@ -921,16 +201,16 @@ tcSetAttr fd fun = do
 	throwErrnoIfMinus1Retry "tcSetAttr"
 	   (c_tcgetattr (fromIntegral fd) p_tios)
 
-
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+	-- Save a copy of termios, if this is a standard file descriptor.
+	-- These terminal settings are restored in hs_exit().
+	when (fd <= 2) $ do
+	  p <- get_saved_termios fd
+	  when (p == nullPtr) $ do
+	     saved_tios <- mallocBytes sizeof_termios
+	     copyBytes saved_tios p_tios sizeof_termios
+	     set_saved_termios fd saved_tios
+#endif
 
 	-- tcsetattr() when invoked by a background process causes the process
 	-- to be sent SIGTTOU regardless of whether the process has TOSTOP set
@@ -948,65 +228,65 @@ tcSetAttr fd fun = do
 	     c_sigprocmask const_sig_setmask p_old_sigset nullPtr
 	     return r
 
+#ifdef __GLASGOW_HASKELL__
+foreign import ccall unsafe "HsBase.h __hscore_get_saved_termios"
+   get_saved_termios :: Int -> IO (Ptr CTermios)
 
+foreign import ccall unsafe "HsBase.h __hscore_set_saved_termios"
+   set_saved_termios :: Int -> (Ptr CTermios) -> IO ()
+#endif
 
+#else
 
+-- 'raw' mode for Win32 means turn off 'line input' (=> buffering and
+-- character translation for the console.) The Win32 API for doing
+-- this is GetConsoleMode(), which also requires echoing to be disabled
+-- when turning off 'line input' processing. Notice that turning off
+-- 'line input' implies enter/return is reported as '\r' (and it won't
+-- report that character until another character is input..odd.) This
+-- latter feature doesn't sit too well with IO actions like IO.hGetLine..
+-- consider yourself warned.
+setCooked :: Int -> Bool -> IO ()
+setCooked fd cooked = do
+  x <- set_console_buffering (fromIntegral fd) (if cooked then 1 else 0)
+  if (x /= 0)
+   then ioError (ioe_unk_error "setCooked" "failed to set buffering")
+   else return ()
 
+ioe_unk_error loc msg 
+ = IOError Nothing OtherError loc msg Nothing
 
+-- Note: echoing goes hand in hand with enabling 'line input' / raw-ness
+-- for Win32 consoles, hence setEcho ends up being the inverse of setCooked.
+setEcho :: Int -> Bool -> IO ()
+setEcho fd on = do
+  x <- set_console_echo (fromIntegral fd) (if on then 1 else 0)
+  if (x /= 0)
+   then ioError (ioe_unk_error "setEcho" "failed to set echoing")
+   else return ()
 
+getEcho :: Int -> IO Bool
+getEcho fd = do
+  r <- get_console_echo (fromIntegral fd)
+  if (r == (-1))
+   then ioError (ioe_unk_error "getEcho" "failed to get echoing")
+   else return (r == 1)
 
+foreign import ccall unsafe "consUtils.h set_console_buffering__"
+   set_console_buffering :: CInt -> CInt -> IO CInt
 
+foreign import ccall unsafe "consUtils.h set_console_echo__"
+   set_console_echo :: CInt -> CInt -> IO CInt
 
+foreign import ccall unsafe "consUtils.h get_console_echo__"
+   get_console_echo :: CInt -> IO CInt
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 -- ---------------------------------------------------------------------------
 -- Turning on non-blocking for a file descriptor
 
-
+#if !defined(mingw32_HOST_OS) && !defined(__MINGW32__)
 
 setNonBlockingFD fd = do
   flags <- throwErrnoIfMinus1Retry "setNonBlockingFD"
@@ -1017,12 +297,12 @@ setNonBlockingFD fd = do
   unless (testBit flags (fromIntegral o_NONBLOCK)) $ do
     c_fcntl_write (fromIntegral fd) const_f_setfl (flags .|. o_NONBLOCK)
     return ()
+#else
 
+-- bogus defns for win32
+setNonBlockingFD fd = return ()
 
-
-
-
-
+#endif
 
 -- -----------------------------------------------------------------------------
 -- foreign imports
@@ -1105,7 +385,7 @@ foreign import ccall unsafe "HsBase.h unlink"
 foreign import ccall unsafe "HsBase.h getpid"
    c_getpid :: IO CPid
 
-
+#if !defined(mingw32_HOST_OS) && !defined(__MINGW32__)
 foreign import ccall unsafe "HsBase.h fcntl"
    c_fcntl_read  :: CInt -> CInt -> IO CInt
 
@@ -1147,17 +427,17 @@ foreign import ccall unsafe "HsBase.h utime"
 
 foreign import ccall unsafe "HsBase.h waitpid"
    c_waitpid :: CPid -> Ptr CInt -> CInt -> IO CPid
+#else
+foreign import ccall unsafe "HsBase.h _setmode"
+   c__setmode :: CInt -> CInt -> IO CInt
 
-
-
-
-
-
-
-
-
-
-
+--   /* Set "stdin" to have binary mode: */
+--   result = _setmode( _fileno( stdin ), _O_BINARY );
+--   if( result == -1 )
+--      perror( "Cannot set mode" );
+--   else
+--      printf( "'stdin' successfully changed to binary mode\n" );
+#endif
 
 -- traversing directories
 foreign import ccall unsafe "dirUtils.h __hscore_readdir"
@@ -1208,18 +488,18 @@ foreign import ccall unsafe "HsBase.h __hscore_sig_setmask"  const_sig_setmask :
 foreign import ccall unsafe "HsBase.h __hscore_f_getfl"      const_f_getfl :: CInt
 foreign import ccall unsafe "HsBase.h __hscore_f_setfl"      const_f_setfl :: CInt
 
-
+#if defined(HTYPE_TCFLAG_T)
 foreign import ccall unsafe "HsBase.h __hscore_sizeof_termios"  sizeof_termios :: Int
 foreign import ccall unsafe "HsBase.h __hscore_sizeof_sigset_t" sizeof_sigset_t :: Int
 
 foreign import ccall unsafe "HsBase.h __hscore_lflag" c_lflag :: Ptr CTermios -> IO CTcflag
 foreign import ccall unsafe "HsBase.h __hscore_poke_lflag" poke_c_lflag :: Ptr CTermios -> CTcflag -> IO ()
 foreign import ccall unsafe "HsBase.h __hscore_ptr_c_cc" ptr_c_cc  :: Ptr CTermios -> IO (Ptr Word8)
+#endif
 
-
-
+#if !defined(mingw32_HOST_OS) && !defined(__MINGW32__)
 foreign import ccall unsafe "HsBase.h __hscore_s_issock" s_issock :: CMode -> Bool
-
-
-
-
+#else
+s_issock :: CMode -> Bool
+s_issock cmode = False
+#endif

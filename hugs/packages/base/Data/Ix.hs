@@ -62,15 +62,15 @@ module Data.Ix
 
 import Prelude
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Arr
+#endif
 
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Prelude( Ix(..) )
+#endif
 
-
-
-
-
+#ifdef __NHC__
+import Ix (Ix(..))
+#endif
 

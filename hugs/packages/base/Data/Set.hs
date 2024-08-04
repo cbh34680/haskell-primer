@@ -113,11 +113,11 @@ import List (nub,sort)
 import qualified List
 -}
 
-
-
-
-
-
+#if __GLASGOW_HASKELL__
+import Text.Read
+import Data.Generics.Basics
+import Data.Generics.Instances
+#endif
 
 {--------------------------------------------------------------------
   Operators
@@ -146,23 +146,23 @@ instance Foldable Set where
     foldMap f Tip = mempty
     foldMap f (Bin _s k l r) = foldMap f l `mappend` f k `mappend` foldMap f r
 
+#if __GLASGOW_HASKELL__
 
+{--------------------------------------------------------------------
+  A Data instance  
+--------------------------------------------------------------------}
 
+-- This instance preserves data abstraction at the cost of inefficiency.
+-- We omit reflection services for the sake of data abstraction.
 
+instance (Data a, Ord a) => Data (Set a) where
+  gfoldl f z set = z fromList `f` (toList set)
+  toConstr _     = error "toConstr"
+  gunfold _ _    = error "gunfold"
+  dataTypeOf _   = mkNorepType "Data.Set.Set"
+  dataCast1 f    = gcast1 f
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 {--------------------------------------------------------------------
   Query
@@ -531,81 +531,26 @@ showSet (x:xs)
   Read
 --------------------------------------------------------------------}
 instance (Read a, Ord a) => Read (Set a) where
+#ifdef __GLASGOW_HASKELL__
+  readPrec = parens $ prec 10 $ do
+    Ident "fromList" <- lexP
+    xs <- readPrec
+    return (fromList xs)
 
-
-
-
-
-
-
-
+  readListPrec = readListPrecDefault
+#else
   readsPrec p = readParen (p > 10) $ \ r -> do
     ("fromList",s) <- lex r
     (xs,t) <- reads s
     return (fromList xs,t)
-
+#endif
 
 {--------------------------------------------------------------------
   Typeable/Data
 --------------------------------------------------------------------}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-setTc = mkTyCon "Set"; instance Typeable1 Set where { typeOf1 _ = mkTyConApp setTc [] }; instance Typeable a => Typeable (Set a) where { typeOf = typeOfDefault }
+#include "Typeable.h"
+INSTANCE_TYPEABLE1(Set,setTc,"Set")
 
 {--------------------------------------------------------------------
   Utility functions that return sub-ranges of the original

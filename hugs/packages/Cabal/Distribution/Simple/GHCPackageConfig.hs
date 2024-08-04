@@ -26,11 +26,11 @@ import Distribution.Package (PackageIdentifier(..), showPackageId)
 import Distribution.Simple.LocalBuildInfo (LocalBuildInfo(..),mkLibDir)
 import Distribution.Setup (CopyDest(..))
 
-
+#ifndef __NHC__
 import Control.Exception (try)
-
-
-
+#else
+import IO (try)
+#endif
 import Control.Monad(unless)
 import Text.PrettyPrint.HughesPJ
 import System.Directory (doesFileExist, getPermissions, Permissions (..))

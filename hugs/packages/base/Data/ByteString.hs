@@ -203,11 +203,11 @@ module Data.ByteString (
         hPutStr,                -- :: Handle -> ByteString -> IO ()
         hPutStrLn,              -- :: Handle -> ByteString -> IO ()
 
-
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+        -- * Fusion utilities
+        unpackList, -- eek, otherwise it gets thrown away by the simplifier
+        lengthU, maximumU, minimumU
+#endif
 
   ) where
 
@@ -251,37 +251,37 @@ import System.IO                (stdin,stdout,hClose,hFileSize
 
 import Data.Monoid              (Monoid, mempty, mappend, mconcat)
 
-
+#if !defined(__GLASGOW_HASKELL__)
 import System.IO.Unsafe
 import qualified System.Environment
 import qualified System.IO      (hGetLine)
+#endif
 
+#if defined(__GLASGOW_HASKELL__)
 
+import System.IO                (hGetBufNonBlocking)
+import System.IO.Error          (isEOFError)
 
+import GHC.Handle
+import GHC.Prim                 (Word#, (+#), writeWord8OffAddr#)
+import GHC.Base                 (build)
+import GHC.Word hiding (Word8)
+import GHC.Ptr                  (Ptr(..))
+import GHC.ST                   (ST(..))
+import GHC.IOBase
 
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 -- -----------------------------------------------------------------------------
 --
 -- Useful macros, until we have bang patterns
 --
 
-
-
-
-
-
+#define STRICT1(f) f a | a `seq` False = undefined
+#define STRICT2(f) f a b | a `seq` b `seq` False = undefined
+#define STRICT3(f) f a b c | a `seq` b `seq` c `seq` False = undefined
+#define STRICT4(f) f a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+#define STRICT5(f) f a b c d e | a `seq` b `seq` c `seq` d `seq` e `seq` False = undefined
 
 -- -----------------------------------------------------------------------------
 
@@ -383,74 +383,74 @@ singleton c = unsafeCreate 1 $ \p -> poke p c
 -- bottleneck. In such cases, consider using packAddress (GHC only).
 pack :: [Word8] -> ByteString
 
-
+#if !defined(__GLASGOW_HASKELL__)
 
 pack str = unsafeCreate (P.length str) $ \p -> go p str
     where
         go _ []     = return ()
         go p (x:xs) = poke p x >> go (p `plusPtr` 1) xs -- less space than pokeElemOff
 
+#else /* hack away */
 
+pack str = unsafeCreate (P.length str) $ \(Ptr p) -> stToIO (go p 0# str)
+    where
+        go _ _ []        = return ()
+        go p i (W8# c:cs) = writeByte p i c >> go p (i +# 1#) cs
 
+        writeByte p i c = ST $ \s# ->
+            case writeWord8OffAddr# p i c s# of s2# -> (# s2#, () #)
 
-
-
-
-
-
-
-
-
+#endif
 
 -- | /O(n)/ Converts a 'ByteString' to a '[Word8]'.
 unpack :: ByteString -> [Word8]
 
-
+#if !defined(__GLASGOW_HASKELL__)
 
 unpack (PS _  _ 0) = []
 unpack (PS ps s l) = inlinePerformIO $ withForeignPtr ps $ \p ->
         go (p `plusPtr` s) (l - 1) []
     where
-        go a b c | a `seq` b `seq` c `seq` False = undefined
+        STRICT3(go)
         go p 0 acc = peek p          >>= \e -> return (e : acc)
         go p n acc = peekByteOff p n >>= \e -> go p (n-1) (e : acc)
 {-# INLINE unpack #-}
 
+#else
 
+unpack ps = build (unpackFoldr ps)
+{-# INLINE unpack #-}
 
+--
+-- critical this isn't strict in the acc
+-- as it will break in the presence of list fusion. this is a known
+-- issue with seq and build/foldr rewrite rules, which rely on lazy
+-- demanding to avoid bottoms in the list.
+--
+unpackFoldr :: ByteString -> (Word8 -> a -> a) -> a -> a
+unpackFoldr (PS fp off len) f ch = withPtr fp $ \p -> do
+    let loop q n    _   | q `seq` n `seq` False = undefined -- n.b.
+        loop _ (-1) acc = return acc
+        loop q n    acc = do
+           a <- peekByteOff q n
+           loop q (n-1) (a `f` acc)
+    loop (p `plusPtr` off) (len-1) ch
+{-# INLINE [0] unpackFoldr #-}
 
+unpackList :: ByteString -> [Word8]
+unpackList (PS fp off len) = withPtr fp $ \p -> do
+    let STRICT3(loop)
+        loop _ (-1) acc = return acc
+        loop q n acc = do
+           a <- peekByteOff q n
+           loop q (n-1) (a : acc)
+    loop (p `plusPtr` off) (len-1) []
 
+{-# RULES
+    "FPS unpack-list"  [1]  forall p  . unpackFoldr p (:) [] = unpackList p
+ #-}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 -- ---------------------------------------------------------------------
 -- Basic interface
@@ -471,9 +471,9 @@ length (PS _ _ l) = assert (l >= 0) $ l
 -- worth around 10% in speed testing.
 --
 
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] length #-}
+#endif
 
 lengthU :: ByteString -> Int
 lengthU = foldl' (const . (+1)) (0::Int)
@@ -552,15 +552,15 @@ append xs ys | null xs   = ys
 -- | /O(n)/ 'map' @f xs@ is the ByteString obtained by applying @f@ to each
 -- element of @xs@. This function is subject to array fusion.
 map :: (Word8 -> Word8) -> ByteString -> ByteString
-
-
-
-
-
-
-
+#if defined(LOOPU_FUSION)
+map f = loopArr . loopU (mapEFL f) NoAcc
+#elif defined(LOOPUP_FUSION)
+map f = loopArr . loopUp (mapEFL f) NoAcc
+#elif defined(LOOPNOACC_FUSION)
+map f = loopArr . loopNoAcc (mapEFL f)
+#else
 map f = loopArr . loopMap f
-
+#endif
 {-# INLINE map #-}
 
 {-
@@ -615,11 +615,11 @@ transpose ps = P.map pack (List.transpose (P.map unpack ps))
 -- ByteString using the binary operator, from left to right.
 -- This function is subject to array fusion.
 foldl :: (a -> Word8 -> a) -> a -> ByteString -> a
-
+#if !defined(LOOPU_FUSION)
 foldl f z = loopAcc . loopUp (foldEFL f) z
-
-
-
+#else
+foldl f z = loopAcc . loopU (foldEFL f) z
+#endif
 {-# INLINE foldl #-}
 
 {-
@@ -655,7 +655,7 @@ foldr' :: (Word8 -> a -> a) -> a -> ByteString -> a
 foldr' k v (PS x s l) = inlinePerformIO $ withForeignPtr x $ \ptr ->
         go v (ptr `plusPtr` (s+l-1)) (ptr `plusPtr` (s-1))
     where
-        go a b c | a `seq` b `seq` c `seq` False = undefined
+        STRICT3(go)
         go z p q | p == q    = return z
                  | otherwise = do c  <- peek p
                                   go (c `k` z) (p `plusPtr` (-1)) q -- tail recursive
@@ -705,7 +705,7 @@ concat []     = empty
 concat [ps]   = ps
 concat xs     = unsafeCreate len $ \ptr -> go xs ptr
   where len = P.sum . P.map length $ xs
-        go a b | a `seq` b `seq` False = undefined
+        STRICT2(go)
         go []            _   = return ()
         go (PS p s l:ps) ptr = do
                 withForeignPtr p $ \fp -> memcpy ptr (fp `plusPtr` s) (fromIntegral l)
@@ -724,7 +724,7 @@ any _ (PS _ _ 0) = False
 any f (PS x s l) = inlinePerformIO $ withForeignPtr x $ \ptr ->
         go (ptr `plusPtr` s) (ptr `plusPtr` (s+l))
     where
-        go a b | a `seq` b `seq` False = undefined
+        STRICT2(go)
         go p q | p == q    = return False
                | otherwise = do c <- peek p
                                 if f c then return True
@@ -739,7 +739,7 @@ all _ (PS _ _ 0) = True
 all f (PS x s l) = inlinePerformIO $ withForeignPtr x $ \ptr ->
         go (ptr `plusPtr` s) (ptr `plusPtr` (s+l))
     where
-        go a b | a `seq` b `seq` False = undefined
+        STRICT2(go)
         go p q | p == q     = return True  -- end of list
                | otherwise  = do c <- peek p
                                  if f c
@@ -773,10 +773,10 @@ minimum xs@(PS x s l)
 -- allocating a buffer.
 --
 
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] minimum #-}
+{-# INLINE [1] maximum #-}
+#endif
 
 maximumU :: ByteString -> Word8
 maximumU = foldl1' max
@@ -805,11 +805,11 @@ minimumU = foldl1' min
 -- passing an accumulating parameter from left to right, and returning a
 -- final value of this accumulator together with the new list.
 mapAccumL :: (acc -> Word8 -> (acc, Word8)) -> acc -> ByteString -> (acc, ByteString)
-
+#if !defined(LOOPU_FUSION)
 mapAccumL f z = unSP . loopUp (mapAccumEFL f) z
-
-
-
+#else
+mapAccumL f z = unSP . loopU (mapAccumEFL f) z
+#endif
 {-# INLINE mapAccumL #-}
 
 -- | The 'mapAccumR' function behaves like a combination of 'map' and
@@ -837,11 +837,11 @@ mapIndexed f = loopArr . loopUp (mapIndexEFL f) 0
 --
 -- > last (scanl f z xs) == foldl f z xs.
 scanl :: (Word8 -> Word8 -> Word8) -> Word8 -> ByteString -> ByteString
-
+#if !defined(LOOPU_FUSION)
 scanl f z ps = loopArr . loopUp (scanEFL f) z $ (ps `snoc` 0)
-
-
-
+#else
+scanl f z ps = loopArr . loopU (scanEFL f) z $ (ps `snoc` 0)
+#endif
 
     -- n.b. haskell's List scan returns a list one bigger than the
     -- input, so we need to snoc here to get some extra space, however,
@@ -917,7 +917,7 @@ unfoldrN :: Int -> (a -> Maybe (Word8, a)) -> a -> (ByteString, Maybe a)
 unfoldrN i f x0
     | i < 0     = (empty, Just x0)
     | otherwise = unsafePerformIO $ createAndTrim' i $ \p -> go p x0 0
-  where go a b c | a `seq` b `seq` c `seq` False = undefined
+  where STRICT3(go)
         go p x n =
           case f x of
             Nothing      -> return (0, n, Nothing)
@@ -977,12 +977,12 @@ break p ps = case findIndexOrEnd p ps of n -> (unsafeTake n ps, unsafeDrop n ps)
     break ((==) x) = breakByte x
   #-}
 
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ >= 605
+{-# RULES
+"FPS specialise break (==x)" forall x.
+    break (==x) = breakByte x
+  #-}
+#endif
 
 -- | 'breakByte' breaks its ByteString argument at the first occurence
 -- of the specified byte. It is more efficient than 'break' as it is
@@ -1018,7 +1018,7 @@ spanByte :: Word8 -> ByteString -> (ByteString, ByteString)
 spanByte c ps@(PS x s l) = inlinePerformIO $ withForeignPtr x $ \p ->
     go (p `plusPtr` s) 0
   where
-    go a b | a `seq` b `seq` False = undefined
+    STRICT2(go)
     go p i | i >= l    = return (ps, empty)
            | otherwise = do c' <- peekByteOff p i
                             if c /= c'
@@ -1031,12 +1031,12 @@ spanByte c ps@(PS x s l) = inlinePerformIO $ withForeignPtr x $ \p ->
     span ((==) x) = spanByte x
   #-}
 
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ >= 605
+{-# RULES
+"FPS specialise span (==x)" forall x.
+    span (==x) = spanByte x
+  #-}
+#endif
 
 -- | 'spanEnd' behaves like 'span' but from the end of the 'ByteString'.
 -- We have
@@ -1062,41 +1062,41 @@ spanEnd  p ps = splitAt (findFromEndUntil (not.p) ps) ps
 --
 splitWith :: (Word8 -> Bool) -> ByteString -> [ByteString]
 
+#if defined(__GLASGOW_HASKELL__)
+splitWith _pred (PS _  _   0) = []
+splitWith pred_ (PS fp off len) = splitWith0 pred# off len fp
+  where pred# c# = pred_ (W8# c#)
 
+        STRICT4(splitWith0)
+        splitWith0 pred' off' len' fp' = withPtr fp $ \p ->
+            splitLoop pred' p 0 off' len' fp'
 
+        splitLoop :: (Word# -> Bool)
+                  -> Ptr Word8
+                  -> Int -> Int -> Int
+                  -> ForeignPtr Word8
+                  -> IO [ByteString]
 
+        splitLoop pred' p idx' off' len' fp'
+            | pred' `seq` p `seq` idx' `seq` off' `seq` len' `seq` fp' `seq` False = undefined
+            | idx' >= len'  = return [PS fp' off' idx']
+            | otherwise = do
+                w <- peekElemOff p (off'+idx')
+                if pred' (case w of W8# w# -> w#)
+                   then return (PS fp' off' idx' :
+                              splitWith0 pred' (off'+idx'+1) (len'-idx'-1) fp')
+                   else splitLoop pred' p (idx'+1) off' len' fp'
+{-# INLINE splitWith #-}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#else
 splitWith _ (PS _ _ 0) = []
 splitWith p ps = loop p ps
     where
-        loop a b | a `seq` b `seq` False = undefined
+        STRICT2(loop)
         loop q qs = if null rest then [chunk]
                                  else chunk : loop q (unsafeTail rest)
             where (chunk,rest) = break q qs
-
+#endif
 
 -- | /O(n)/ Break a 'ByteString' into pieces separated by the byte
 -- argument, consuming the delimiter. I.e.
@@ -1119,7 +1119,7 @@ split _ (PS _ _ 0) = []
 split w (PS x s l) = inlinePerformIO $ withForeignPtr x $ \p -> do
     let ptr = p `plusPtr` s
 
-        loop a | a `seq` False = undefined
+        STRICT1(loop)
         loop n =
             let q = inlinePerformIO $ memchr (ptr `plusPtr` n)
                                            w (fromIntegral (l-n))
@@ -1253,7 +1253,7 @@ elemIndexEnd :: Word8 -> ByteString -> Maybe Int
 elemIndexEnd ch (PS x s l) = inlinePerformIO $ withForeignPtr x $ \p ->
     go (p `plusPtr` s) (l-1)
   where
-    go a b | a `seq` b `seq` False = undefined
+    STRICT2(go)
     go p i | i < 0     = return Nothing
            | otherwise = do ch' <- peekByteOff p i
                             if ch == ch'
@@ -1268,7 +1268,7 @@ elemIndices :: Word8 -> ByteString -> [Int]
 elemIndices w (PS x s l) = inlinePerformIO $ withForeignPtr x $ \p -> do
     let ptr = p `plusPtr` s
 
-        loop a | a `seq` False = undefined
+        STRICT1(loop)
         loop n = let q = inlinePerformIO $ memchr (ptr `plusPtr` n)
                                                 w (fromIntegral (l - n))
                  in if q == nullPtr
@@ -1321,7 +1321,7 @@ count w (PS x s m) = inlinePerformIO $ withForeignPtr x $ \p ->
 findIndex :: (Word8 -> Bool) -> ByteString -> Maybe Int
 findIndex k (PS x s l) = inlinePerformIO $ withForeignPtr x $ \f -> go (f `plusPtr` s) 0
   where
-    go a b | a `seq` b `seq` False = undefined
+    STRICT2(go)
     go ptr n | n >= l    = return Nothing
              | otherwise = do w <- peek ptr
                               if k w
@@ -1334,7 +1334,7 @@ findIndex k (PS x s l) = inlinePerformIO $ withForeignPtr x $ \f -> go (f `plusP
 findIndices :: (Word8 -> Bool) -> ByteString -> [Int]
 findIndices p ps = loop 0 ps
    where
-     loop a b | a `seq` b `seq` False = undefined
+     STRICT2(loop)
      loop n qs | null qs           = []
                | p (unsafeHead qs) = n : loop (n+1) (unsafeTail qs)
                | otherwise         =     loop (n+1) (unsafeTail qs)
@@ -1356,15 +1356,15 @@ notElem c ps = not (elem c ps)
 -- returns a ByteString containing those characters that satisfy the
 -- predicate. This function is subject to array fusion.
 filter :: (Word8 -> Bool) -> ByteString -> ByteString
-
-
-
-
-
-
-
+#if defined(LOOPU_FUSION)
+filter p  = loopArr . loopU (filterEFL p) NoAcc
+#elif defined(LOOPUP_FUSION)
+filter p  = loopArr . loopUp (filterEFL p) NoAcc
+#elif defined(LOOPNOACC_FUSION)
+filter p  = loopArr . loopNoAcc (filterEFL p)
+#else
 filter f = loopArr . loopFilter f
-
+#endif
 {-# INLINE filter #-}
 
 {-
@@ -1405,12 +1405,12 @@ filterByte w ps = replicate (count w ps) w
       filter ((==) x) = filterByte x
   #-}
 
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ >= 605
+{-# RULES
+  "FPS specialise filter (== x)" forall x.
+     filter (== x) = filterByte x
+  #-}
+#endif
 
 --
 -- | /O(n)/ A first order equivalent of /filter . (\/=)/, for the common
@@ -1429,12 +1429,12 @@ filterNotByte w = filter (/= w)
     filter ((/=) x) = filterNotByte x
   #-}
 
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ >= 605
+{-# RULES
+"FPS specialise filter (/= x)" forall x.
+    filter (/= x) = filterNotByte x
+  #-}
+#endif
 
 -- | /O(n)/ The 'find' function takes a predicate and a ByteString,
 -- and returns the first element in matching the predicate, or 'Nothing'
@@ -1551,9 +1551,9 @@ zipWith :: (Word8 -> Word8 -> a) -> ByteString -> ByteString -> [a]
 zipWith f ps qs
     | null ps || null qs = []
     | otherwise = f (unsafeHead ps) (unsafeHead qs) : zipWith f (unsafeTail ps) (unsafeTail qs)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] zipWith #-}
+#endif
 
 --
 -- | A specialised version of zipWith for the common case of a
@@ -1569,7 +1569,7 @@ zipWith' f (PS fp s l) (PS fq t m) = inlinePerformIO $
     create len $ zipWith_ 0 (a `plusPtr` s) (b `plusPtr` t)
   where
     zipWith_ :: Int -> Ptr Word8 -> Ptr Word8 -> Ptr Word8 -> IO ()
-    zipWith_ a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+    STRICT4(zipWith_)
     zipWith_ n p1 p2 r
        | n >= len = return ()
        | otherwise = do
@@ -1618,7 +1618,7 @@ sort (PS input s l) = unsafeCreate l $ \p -> allocaArray 256 $ \arr -> do
     memset (castPtr arr) 0 (256 * fromIntegral (sizeOf (undefined :: CSize)))
     withForeignPtr input (\x -> countOccurrences arr (x `plusPtr` s) l)
 
-    let go a b | a `seq` b `seq` False = undefined
+    let STRICT2(go)
         go 256 _   = return ()
         go i   ptr = do n <- peekElemOff arr i
                         when (n /= 0) $ memset ptr (fromIntegral i) n >> return ()
@@ -1746,75 +1746,75 @@ hGetLines h = go
 -- | Read a line from a handle
 
 hGetLine :: Handle -> IO ByteString
-
+#if !defined(__GLASGOW_HASKELL__)
 hGetLine h = System.IO.hGetLine h >>= return . pack . P.map c2w
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#else
+hGetLine h = wantReadableHandle "Data.ByteString.hGetLine" h $ \ handle_ -> do
+    case haBufferMode handle_ of
+       NoBuffering -> error "no buffering"
+       _other      -> hGetLineBuffered handle_
+
+ where
+    hGetLineBuffered handle_ = do
+        let ref = haBuffer handle_
+        buf <- readIORef ref
+        hGetLineBufferedLoop handle_ ref buf 0 []
+
+    hGetLineBufferedLoop handle_ ref
+            buf@Buffer{ bufRPtr=r, bufWPtr=w, bufBuf=raw } len xss =
+        len `seq` do
+        off <- findEOL r w raw
+        let new_len = len + off - r
+        xs <- mkPS raw r off
+
+      -- if eol == True, then off is the offset of the '\n'
+      -- otherwise off == w and the buffer is now empty.
+        if off /= w
+            then do if (w == off + 1)
+                            then writeIORef ref buf{ bufRPtr=0, bufWPtr=0 }
+                            else writeIORef ref buf{ bufRPtr = off + 1 }
+                    mkBigPS new_len (xs:xss)
+            else do
+                 maybe_buf <- maybeFillReadBuffer (haFD handle_) True (haIsStream handle_)
+                                    buf{ bufWPtr=0, bufRPtr=0 }
+                 case maybe_buf of
+                    -- Nothing indicates we caught an EOF, and we may have a
+                    -- partial line to return.
+                    Nothing -> do
+                         writeIORef ref buf{ bufRPtr=0, bufWPtr=0 }
+                         if new_len > 0
+                            then mkBigPS new_len (xs:xss)
+                            else ioe_EOF
+                    Just new_buf ->
+                         hGetLineBufferedLoop handle_ ref new_buf new_len (xs:xss)
+
+    -- find the end-of-line character, if there is one
+    findEOL r w raw
+        | r == w = return w
+        | otherwise =  do
+            (c,r') <- readCharFromBuffer raw r
+            if c == '\n'
+                then return r -- NB. not r': don't include the '\n'
+                else findEOL r' w raw
+
+    maybeFillReadBuffer fd is_line is_stream buf = catch
+        (do buf' <- fillReadBuffer fd is_line is_stream buf
+            return (Just buf'))
+        (\e -> if isEOFError e then return Nothing else ioError e)
+
+-- TODO, rewrite to use normal memcpy
+mkPS :: RawBuffer -> Int -> Int -> IO ByteString
+mkPS buf start end =
+    let len = end - start
+    in create len $ \p -> do
+        memcpy_ptr_baoff p buf (fromIntegral start) (fromIntegral len)
+        return ()
+
+mkBigPS :: Int -> [ByteString] -> IO ByteString
+mkBigPS _ [ps] = return ps
+mkBigPS _ pss = return $! concat (P.reverse pss)
+
+#endif
 
 -- ---------------------------------------------------------------------
 -- Block IO
@@ -1853,12 +1853,12 @@ hGet h i = createAndTrim i $ \p -> hGetBuf h p i
 -- waiting for data to become available, instead it returns only whatever data
 -- is available.
 hGetNonBlocking :: Handle -> Int -> IO ByteString
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+hGetNonBlocking _ 0 = return empty
+hGetNonBlocking h i = createAndTrim i $ \p -> hGetBufNonBlocking h p i
+#else
 hGetNonBlocking = hGet
-
+#endif
 
 -- | Read entire handle contents into a 'ByteString'.
 -- This function reads chunks at a time, doubling the chunksize on each
@@ -1969,8 +1969,8 @@ mmap f = do
 #if !defined(__OpenBSD__)
                              let unmap = c_munmap p l >> return ()
 #else
-
-
+                             let unmap = return ()
+#endif
                              fp <- newForeignPtr p unmap
                              return fp
                c_close fd
@@ -1987,7 +1987,7 @@ mmap f = do
 findIndexOrEnd :: (Word8 -> Bool) -> ByteString -> Int
 findIndexOrEnd k (PS x s l) = inlinePerformIO $ withForeignPtr x $ \f -> go (f `plusPtr` s) 0
   where
-    go a b | a `seq` b `seq` False = undefined
+    STRICT2(go)
     go ptr n | n >= l    = return l
              | otherwise = do w <- peek ptr
                               if k w
@@ -2012,7 +2012,7 @@ moduleError fun msg = error ("Data.ByteString." ++ fun ++ ':':' ':msg)
 
 -- Find from the end of the string using predicate
 findFromEndUntil :: (Word8 -> Bool) -> ByteString -> Int
-findFromEndUntil a b | a `seq` b `seq` False = undefined
+STRICT2(findFromEndUntil)
 findFromEndUntil f ps@(PS x s l) =
     if null ps then 0
     else if f (last ps) then l

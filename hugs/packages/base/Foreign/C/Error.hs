@@ -90,738 +90,18 @@ module Foreign.C.Error (
 -- this is were we get the CONST_XXX definitions from that configure
 -- calculated for us
 --
-
-                                                                              
-                                                                             
-
-                         
-
-
-                          
-
-
-                              
-
-
-                                 
-
-
-                        
-
-
-                                
-
-
-                          
-
-
-                            
-
-
-                         
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                          
-
-
-                         
-
-
-                                
-
-
-                                
-
-
-                              
-
-
-                           
-
-
-                                
-
-
-                          
-
-
-                        
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                             
-
-
-                                
-
-
-                         
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                          
-
-
-                       
-
-
-                           
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                            
-
-
-                             
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                               
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                               
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                             
-
-
-                            
-
-
-                          
-
-
-                         
-
-
-                              
-
-
-                         
-
-
-                                
-
-
-                         
-
-
-                            
-
-
-                                
-
-
-                                 
-
-
-                                
-
-
-                          
-
-
-                                   
-
-
-                              
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                                   
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                             
-
-
-                                
-
-
-                           
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                            
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                               
-
-
-                               
-
-
-                                                        
-
-
-                                                                                     
-
-
-                                                                                    
-                             
-
-                                                         
-
-
-                                                        
-
-
-                                                        
-
-
-                                                  
-
-
-                                                   
-
-
-                                                       
-
-
-                                                      
-                          
-
-                                                       
-
-
-                                                          
-
-
-                                                      
-
-
-                                                           
-
-
-                                                      
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                   
-
-
-                                                         
-
-
-                                                       
-
-
-                                                       
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                          
-
-
-                                                         
-
-
-                                                        
-
-
-                                                               
-
-
-                                                             
-
-
-                                                           
-
-
-                                                              
-
-
-                                                            
-
-
-                                                             
-                              
-
-                                                            
-
-
-                                                           
-
-
-                                                            
-
-
-                                                              
-
-
-                                                           
-
-
-                                                          
-
-
-                                                   
-
-
-                                                       
-
-
-                                                                                                         
-
-
-                                                                                         
-                        
-
-                                                         
-
-
-                                                        
-
-
-                                                   
-
-
-                                                        
-                         
-
-                                                         
-
-
-                                                          
-                           
-
-                                                          
-                           
-
-                                  
-
-
-                                   
-
-
-                                                     
-                         
-
-                                     
-
-
-                                     
-
-
-                                        
-
-
-                                      
-
-
-                                       
-
-
-                                      
-
-
-                                      
-
-
-                                      
-
-
-                                    
-
-
-                                         
-
-
-                                         
-
-
-                                     
-
-
-                                          
-
-
-                                       
-
-
-                                        
-
-
-                                      
-
-
-                                      
-
-
-                                          
-
-
-                                       
-
-
-                                      
-
-
-                                            
-
-
-                                             
-
-
-                                       
-
-
-                                        
-
-
-                                        
-
-
-                                         
-
-
-                                       
-
-
-                                      
-
-
-                                          
-
-
-                                          
-
-
-                                              
-
-
-                                             
-
-
-                                              
-
-
-                                                   
-
-
-                                               
-
-
-                                        
-
-
-                                       
-                         
-
-                                                                              
-
-
-                                              
-
-
-                                                          
-
-
-                                                          
-
-
-                                            
-
-
-                                           
-
-
-                                                      
-
-
-                                                                           
-
-
-                                                            
-                           
-
-                                                                       
-                              
-
-                                                 
-                         
-
-                                                            
-                  
-
-                                                       
-                  
-
-                                                
-                  
-
-
-
+#ifndef __NHC__
+#include "HsBaseConfig.h"
+#endif
 
 -- system dependent imports
 -- ------------------------
 
 -- GHC allows us to get at the guts inside IO errors/exceptions
 --
-
-
-
+#if __GLASGOW_HASKELL__
+import GHC.IOBase (IOException(..), IOErrorType(..))
+#endif /* __GLASGOW_HASKELL__ */
 
 
 -- regular imports
@@ -834,19 +114,19 @@ import Foreign.C.String
 import Foreign.Marshal.Error 	( void )
 import Data.Maybe
 
-
-
-
-
-
+#if __GLASGOW_HASKELL__
+import GHC.IOBase
+import GHC.Num
+import GHC.Base
+#else
 import System.IO		( Handle )
 import System.IO.Error		( IOError, ioError )
 import System.IO.Unsafe		( unsafePerformIO )
+#endif
 
-
-
+#ifdef __HUGS__
 {-# CFILES cbits/PrelIOUtils.c #-}
-
+#endif
 
 
 -- "errno" type
@@ -884,108 +164,108 @@ eOK, e2BIG, eACCES, eADDRINUSE, eADDRNOTAVAIL, eADV, eAFNOSUPPORT, eAGAIN,
 -- configure 
 --
 eOK             = Errno 0
-
-
-
-e2BIG           = Errno (7)
-eACCES		= Errno (13)
-eADDRINUSE	= Errno (98)
-eADDRNOTAVAIL	= Errno (99)
-eADV		= Errno (68)
-eAFNOSUPPORT	= Errno (97)
-eAGAIN		= Errno (11)
-eALREADY	= Errno (114)
-eBADF		= Errno (9)
-eBADMSG		= Errno (74)
-eBADRPC		= Errno (-1)
-eBUSY		= Errno (16)
-eCHILD		= Errno (10)
-eCOMM		= Errno (70)
-eCONNABORTED	= Errno (103)
-eCONNREFUSED	= Errno (111)
-eCONNRESET	= Errno (104)
-eDEADLK		= Errno (35)
-eDESTADDRREQ	= Errno (89)
-eDIRTY		= Errno (-1)
-eDOM		= Errno (33)
-eDQUOT		= Errno (122)
-eEXIST		= Errno (17)
-eFAULT		= Errno (14)
-eFBIG		= Errno (27)
-eFTYPE		= Errno (-1)
-eHOSTDOWN	= Errno (112)
-eHOSTUNREACH	= Errno (113)
-eIDRM		= Errno (43)
-eILSEQ		= Errno (84)
-eINPROGRESS	= Errno (115)
-eINTR		= Errno (4)
-eINVAL		= Errno (22)
-eIO		= Errno (5)
-eISCONN		= Errno (106)
-eISDIR		= Errno (21)
-eLOOP		= Errno (40)
-eMFILE		= Errno (24)
-eMLINK		= Errno (31)
-eMSGSIZE	= Errno (90)
-eMULTIHOP	= Errno (72)
-eNAMETOOLONG	= Errno (36)
-eNETDOWN	= Errno (100)
-eNETRESET	= Errno (102)
-eNETUNREACH	= Errno (101)
-eNFILE		= Errno (23)
-eNOBUFS		= Errno (105)
-eNODATA		= Errno (61)
-eNODEV		= Errno (19)
-eNOENT		= Errno (2)
-eNOEXEC		= Errno (8)
-eNOLCK		= Errno (37)
-eNOLINK		= Errno (67)
-eNOMEM		= Errno (12)
-eNOMSG		= Errno (42)
-eNONET		= Errno (64)
-eNOPROTOOPT	= Errno (92)
-eNOSPC		= Errno (28)
-eNOSR		= Errno (63)
-eNOSTR		= Errno (60)
-eNOSYS		= Errno (38)
-eNOTBLK		= Errno (15)
-eNOTCONN	= Errno (107)
-eNOTDIR		= Errno (20)
-eNOTEMPTY	= Errno (39)
-eNOTSOCK	= Errno (88)
-eNOTTY		= Errno (25)
-eNXIO		= Errno (6)
-eOPNOTSUPP	= Errno (95)
-ePERM		= Errno (1)
-ePFNOSUPPORT	= Errno (96)
-ePIPE		= Errno (32)
-ePROCLIM	= Errno (-1)
-ePROCUNAVAIL	= Errno (-1)
-ePROGMISMATCH	= Errno (-1)
-ePROGUNAVAIL	= Errno (-1)
-ePROTO		= Errno (71)
-ePROTONOSUPPORT = Errno (93)
-ePROTOTYPE	= Errno (91)
-eRANGE		= Errno (34)
-eREMCHG		= Errno (78)
-eREMOTE		= Errno (66)
-eROFS		= Errno (30)
-eRPCMISMATCH	= Errno (-1)
-eRREMOTE	= Errno (-1)
-eSHUTDOWN	= Errno (108)
-eSOCKTNOSUPPORT = Errno (94)
-eSPIPE		= Errno (29)
-eSRCH		= Errno (3)
-eSRMNT		= Errno (69)
-eSTALE		= Errno (116)
-eTIME		= Errno (62)
-eTIMEDOUT	= Errno (110)
-eTOOMANYREFS	= Errno (109)
-eTXTBSY		= Errno (26)
-eUSERS		= Errno (87)
-eWOULDBLOCK	= Errno (11)
-eXDEV		= Errno (18)
-
+#ifdef __NHC__
+#include "Errno.hs"
+#else
+e2BIG           = Errno (CONST_E2BIG)
+eACCES		= Errno (CONST_EACCES)
+eADDRINUSE	= Errno (CONST_EADDRINUSE)
+eADDRNOTAVAIL	= Errno (CONST_EADDRNOTAVAIL)
+eADV		= Errno (CONST_EADV)
+eAFNOSUPPORT	= Errno (CONST_EAFNOSUPPORT)
+eAGAIN		= Errno (CONST_EAGAIN)
+eALREADY	= Errno (CONST_EALREADY)
+eBADF		= Errno (CONST_EBADF)
+eBADMSG		= Errno (CONST_EBADMSG)
+eBADRPC		= Errno (CONST_EBADRPC)
+eBUSY		= Errno (CONST_EBUSY)
+eCHILD		= Errno (CONST_ECHILD)
+eCOMM		= Errno (CONST_ECOMM)
+eCONNABORTED	= Errno (CONST_ECONNABORTED)
+eCONNREFUSED	= Errno (CONST_ECONNREFUSED)
+eCONNRESET	= Errno (CONST_ECONNRESET)
+eDEADLK		= Errno (CONST_EDEADLK)
+eDESTADDRREQ	= Errno (CONST_EDESTADDRREQ)
+eDIRTY		= Errno (CONST_EDIRTY)
+eDOM		= Errno (CONST_EDOM)
+eDQUOT		= Errno (CONST_EDQUOT)
+eEXIST		= Errno (CONST_EEXIST)
+eFAULT		= Errno (CONST_EFAULT)
+eFBIG		= Errno (CONST_EFBIG)
+eFTYPE		= Errno (CONST_EFTYPE)
+eHOSTDOWN	= Errno (CONST_EHOSTDOWN)
+eHOSTUNREACH	= Errno (CONST_EHOSTUNREACH)
+eIDRM		= Errno (CONST_EIDRM)
+eILSEQ		= Errno (CONST_EILSEQ)
+eINPROGRESS	= Errno (CONST_EINPROGRESS)
+eINTR		= Errno (CONST_EINTR)
+eINVAL		= Errno (CONST_EINVAL)
+eIO		= Errno (CONST_EIO)
+eISCONN		= Errno (CONST_EISCONN)
+eISDIR		= Errno (CONST_EISDIR)
+eLOOP		= Errno (CONST_ELOOP)
+eMFILE		= Errno (CONST_EMFILE)
+eMLINK		= Errno (CONST_EMLINK)
+eMSGSIZE	= Errno (CONST_EMSGSIZE)
+eMULTIHOP	= Errno (CONST_EMULTIHOP)
+eNAMETOOLONG	= Errno (CONST_ENAMETOOLONG)
+eNETDOWN	= Errno (CONST_ENETDOWN)
+eNETRESET	= Errno (CONST_ENETRESET)
+eNETUNREACH	= Errno (CONST_ENETUNREACH)
+eNFILE		= Errno (CONST_ENFILE)
+eNOBUFS		= Errno (CONST_ENOBUFS)
+eNODATA		= Errno (CONST_ENODATA)
+eNODEV		= Errno (CONST_ENODEV)
+eNOENT		= Errno (CONST_ENOENT)
+eNOEXEC		= Errno (CONST_ENOEXEC)
+eNOLCK		= Errno (CONST_ENOLCK)
+eNOLINK		= Errno (CONST_ENOLINK)
+eNOMEM		= Errno (CONST_ENOMEM)
+eNOMSG		= Errno (CONST_ENOMSG)
+eNONET		= Errno (CONST_ENONET)
+eNOPROTOOPT	= Errno (CONST_ENOPROTOOPT)
+eNOSPC		= Errno (CONST_ENOSPC)
+eNOSR		= Errno (CONST_ENOSR)
+eNOSTR		= Errno (CONST_ENOSTR)
+eNOSYS		= Errno (CONST_ENOSYS)
+eNOTBLK		= Errno (CONST_ENOTBLK)
+eNOTCONN	= Errno (CONST_ENOTCONN)
+eNOTDIR		= Errno (CONST_ENOTDIR)
+eNOTEMPTY	= Errno (CONST_ENOTEMPTY)
+eNOTSOCK	= Errno (CONST_ENOTSOCK)
+eNOTTY		= Errno (CONST_ENOTTY)
+eNXIO		= Errno (CONST_ENXIO)
+eOPNOTSUPP	= Errno (CONST_EOPNOTSUPP)
+ePERM		= Errno (CONST_EPERM)
+ePFNOSUPPORT	= Errno (CONST_EPFNOSUPPORT)
+ePIPE		= Errno (CONST_EPIPE)
+ePROCLIM	= Errno (CONST_EPROCLIM)
+ePROCUNAVAIL	= Errno (CONST_EPROCUNAVAIL)
+ePROGMISMATCH	= Errno (CONST_EPROGMISMATCH)
+ePROGUNAVAIL	= Errno (CONST_EPROGUNAVAIL)
+ePROTO		= Errno (CONST_EPROTO)
+ePROTONOSUPPORT = Errno (CONST_EPROTONOSUPPORT)
+ePROTOTYPE	= Errno (CONST_EPROTOTYPE)
+eRANGE		= Errno (CONST_ERANGE)
+eREMCHG		= Errno (CONST_EREMCHG)
+eREMOTE		= Errno (CONST_EREMOTE)
+eROFS		= Errno (CONST_EROFS)
+eRPCMISMATCH	= Errno (CONST_ERPCMISMATCH)
+eRREMOTE	= Errno (CONST_ERREMOTE)
+eSHUTDOWN	= Errno (CONST_ESHUTDOWN)
+eSOCKTNOSUPPORT = Errno (CONST_ESOCKTNOSUPPORT)
+eSPIPE		= Errno (CONST_ESPIPE)
+eSRCH		= Errno (CONST_ESRCH)
+eSRMNT		= Errno (CONST_ESRMNT)
+eSTALE		= Errno (CONST_ESTALE)
+eTIME		= Errno (CONST_ETIME)
+eTIMEDOUT	= Errno (CONST_ETIMEDOUT)
+eTOOMANYREFS	= Errno (CONST_ETOOMANYREFS)
+eTXTBSY		= Errno (CONST_ETXTBSY)
+eUSERS		= Errno (CONST_EUSERS)
+eWOULDBLOCK	= Errno (CONST_EWOULDBLOCK)
+eXDEV		= Errno (CONST_EXDEV)
+#endif
 
 -- | Yield 'True' if the given 'Errno' value is valid on the system.
 -- This implies that the 'Eq' instance of 'Errno' is also system dependent
@@ -1008,25 +288,25 @@ getErrno :: IO Errno
 -- We must call a C function to get the value of errno in general.  On
 -- threaded systems, errno is hidden behind a C macro so that each OS
 -- thread gets its own copy.
-
-
-
-
+#ifdef __NHC__
+getErrno = do e <- peek _errno; return (Errno e)
+foreign import ccall unsafe "errno.h &errno" _errno :: Ptr CInt
+#else
 getErrno = do e <- get_errno; return (Errno e)
 foreign import ccall unsafe "HsBase.h __hscore_get_errno" get_errno :: IO CInt
-
+#endif
 
 -- | Reset the current thread\'s @errno@ value to 'eOK'.
 --
 resetErrno :: IO ()
 
 -- Again, setting errno has to be done via a C function.
-
-
-
+#ifdef __NHC__
+resetErrno = poke _errno 0
+#else
 resetErrno = set_errno 0
 foreign import ccall unsafe "HsBase.h __hscore_set_errno" set_errno :: CInt -> IO ()
-
+#endif
 
 -- throw current "errno" value
 -- ---------------------------
@@ -1179,112 +459,112 @@ errnoToIOError	:: String	-- ^ the location where the error occurred
 		-> IOError
 errnoToIOError loc errno maybeHdl maybeName = unsafePerformIO $ do
     str <- strerror errno >>= peekCString
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__
+    return (IOError maybeHdl errType loc str maybeName)
+    where
+    errType
+        | errno == eOK             = OtherError
+        | errno == e2BIG           = ResourceExhausted
+        | errno == eACCES          = PermissionDenied
+        | errno == eADDRINUSE      = ResourceBusy
+        | errno == eADDRNOTAVAIL   = UnsupportedOperation
+        | errno == eADV            = OtherError
+        | errno == eAFNOSUPPORT    = UnsupportedOperation
+        | errno == eAGAIN          = ResourceExhausted
+        | errno == eALREADY        = AlreadyExists
+        | errno == eBADF           = InvalidArgument
+        | errno == eBADMSG         = InappropriateType
+        | errno == eBADRPC         = OtherError
+        | errno == eBUSY           = ResourceBusy
+        | errno == eCHILD          = NoSuchThing
+        | errno == eCOMM           = ResourceVanished
+        | errno == eCONNABORTED    = OtherError
+        | errno == eCONNREFUSED    = NoSuchThing
+        | errno == eCONNRESET      = ResourceVanished
+        | errno == eDEADLK         = ResourceBusy
+        | errno == eDESTADDRREQ    = InvalidArgument
+        | errno == eDIRTY          = UnsatisfiedConstraints
+        | errno == eDOM            = InvalidArgument
+        | errno == eDQUOT          = PermissionDenied
+        | errno == eEXIST          = AlreadyExists
+        | errno == eFAULT          = OtherError
+        | errno == eFBIG           = PermissionDenied
+        | errno == eFTYPE          = InappropriateType
+        | errno == eHOSTDOWN       = NoSuchThing
+        | errno == eHOSTUNREACH    = NoSuchThing
+        | errno == eIDRM           = ResourceVanished
+        | errno == eILSEQ          = InvalidArgument
+        | errno == eINPROGRESS     = AlreadyExists
+        | errno == eINTR           = Interrupted
+        | errno == eINVAL          = InvalidArgument
+        | errno == eIO             = HardwareFault
+        | errno == eISCONN         = AlreadyExists
+        | errno == eISDIR          = InappropriateType
+        | errno == eLOOP           = InvalidArgument
+        | errno == eMFILE          = ResourceExhausted
+        | errno == eMLINK          = ResourceExhausted
+        | errno == eMSGSIZE        = ResourceExhausted
+        | errno == eMULTIHOP       = UnsupportedOperation
+        | errno == eNAMETOOLONG    = InvalidArgument
+        | errno == eNETDOWN        = ResourceVanished
+        | errno == eNETRESET       = ResourceVanished
+        | errno == eNETUNREACH     = NoSuchThing
+        | errno == eNFILE          = ResourceExhausted
+        | errno == eNOBUFS         = ResourceExhausted
+        | errno == eNODATA         = NoSuchThing
+        | errno == eNODEV          = UnsupportedOperation
+        | errno == eNOENT          = NoSuchThing
+        | errno == eNOEXEC         = InvalidArgument
+        | errno == eNOLCK          = ResourceExhausted
+        | errno == eNOLINK         = ResourceVanished
+        | errno == eNOMEM          = ResourceExhausted
+        | errno == eNOMSG          = NoSuchThing
+        | errno == eNONET          = NoSuchThing
+        | errno == eNOPROTOOPT     = UnsupportedOperation
+        | errno == eNOSPC          = ResourceExhausted
+        | errno == eNOSR           = ResourceExhausted
+        | errno == eNOSTR          = InvalidArgument
+        | errno == eNOSYS          = UnsupportedOperation
+        | errno == eNOTBLK         = InvalidArgument
+        | errno == eNOTCONN        = InvalidArgument
+        | errno == eNOTDIR         = InappropriateType
+        | errno == eNOTEMPTY       = UnsatisfiedConstraints
+        | errno == eNOTSOCK        = InvalidArgument
+        | errno == eNOTTY          = IllegalOperation
+        | errno == eNXIO           = NoSuchThing
+        | errno == eOPNOTSUPP      = UnsupportedOperation
+        | errno == ePERM           = PermissionDenied
+        | errno == ePFNOSUPPORT    = UnsupportedOperation
+        | errno == ePIPE           = ResourceVanished
+        | errno == ePROCLIM        = PermissionDenied
+        | errno == ePROCUNAVAIL    = UnsupportedOperation
+        | errno == ePROGMISMATCH   = ProtocolError
+        | errno == ePROGUNAVAIL    = UnsupportedOperation
+        | errno == ePROTO          = ProtocolError
+        | errno == ePROTONOSUPPORT = ProtocolError
+        | errno == ePROTOTYPE      = ProtocolError
+        | errno == eRANGE          = UnsupportedOperation
+        | errno == eREMCHG         = ResourceVanished
+        | errno == eREMOTE         = IllegalOperation
+        | errno == eROFS           = PermissionDenied
+        | errno == eRPCMISMATCH    = ProtocolError
+        | errno == eRREMOTE        = IllegalOperation
+        | errno == eSHUTDOWN       = IllegalOperation
+        | errno == eSOCKTNOSUPPORT = UnsupportedOperation
+        | errno == eSPIPE          = UnsupportedOperation
+        | errno == eSRCH           = NoSuchThing
+        | errno == eSRMNT          = UnsatisfiedConstraints
+        | errno == eSTALE          = ResourceVanished
+        | errno == eTIME           = TimeExpired
+        | errno == eTIMEDOUT       = TimeExpired
+        | errno == eTOOMANYREFS    = ResourceExhausted
+        | errno == eTXTBSY         = ResourceBusy
+        | errno == eUSERS          = ResourceExhausted
+        | errno == eWOULDBLOCK     = OtherError
+        | errno == eXDEV           = UnsupportedOperation
+        | otherwise                = OtherError
+#else
     return (userError (loc ++ ": " ++ str ++ maybe "" (": "++) maybeName))
-
+#endif
 
 foreign import ccall unsafe "string.h" strerror :: Errno -> IO (Ptr CChar)

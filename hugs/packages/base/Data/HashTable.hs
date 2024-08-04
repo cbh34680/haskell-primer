@@ -33,38 +33,38 @@ module Data.HashTable (
 -- This module is imported by Data.Dynamic, which is pretty low down in the
 -- module hierarchy, so don't import "high-level" modules
 
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+#else
 import Prelude	hiding	( lookup )
-
+#endif
 import Data.Tuple	( fst )
 import Data.Bits
 import Data.Maybe
 import Data.List	( maximumBy, length, concat, foldl', partition )
 import Data.Int		( Int32 )
 
+#if defined(__GLASGOW_HASKELL__)
+import GHC.Num
+import GHC.Real		( fromIntegral )
+import GHC.Show		( Show(..) )
+import GHC.Int		( Int64 )
 
-
-
-
-
-
-
-
-
-
+import GHC.IOBase	( IO, IOArray, newIOArray,
+			  unsafeReadIOArray, unsafeWriteIOArray, unsafePerformIO,
+			  IORef, newIORef, readIORef, writeIORef )
+#else
 import Data.Char	( ord )
 import Data.IORef	( IORef, newIORef, readIORef, writeIORef )
 import System.IO.Unsafe	( unsafePerformIO )
 import Data.Int		( Int64 )
-
+#  if defined(__HUGS__)
 import Hugs.IOArray	( IOArray, newIOArray,
 			  unsafeReadIOArray, unsafeWriteIOArray )
-
-
-
-
+#  elif defined(__NHC__)
+import NHC.IOExtras	( IOArray, newIOArray, readIOArray, writeIOArray )
+#  endif
+#endif
 import Control.Monad	( mapM, mapM_, sequence_ )
 
 
@@ -80,15 +80,15 @@ writeMutArray :: MutArray a -> Int32 -> a -> IO ()
 freezeArray  :: MutArray a -> IO (HTArray a)
 thawArray    :: HTArray a -> IO (MutArray a)
 newMutArray   :: (Int32, Int32) -> a -> IO (MutArray a)
-
-
-
-
-
-
-
-
-
+#if defined(DEBUG) || defined(__NHC__)
+type MutArray a = IOArray Int32 a
+type HTArray a = MutArray a
+newMutArray = newIOArray
+readHTArray  = readIOArray
+writeMutArray = writeIOArray
+freezeArray = return
+thawArray = return
+#else
 type MutArray a = IOArray Int32 a
 type HTArray a = MutArray a -- Array Int32 a
 newMutArray = newIOArray
@@ -98,7 +98,7 @@ readMutArray arr i = unsafeReadIOArray arr (fromIntegral i)
 writeMutArray arr i x = unsafeWriteIOArray arr (fromIntegral i) x
 freezeArray = return -- unsafeFreeze
 thawArray = return -- unsafeThaw
-
+#endif
 
 data HashTable key val = HashTable {
 	                             cmp     :: !(key -> key -> Bool),

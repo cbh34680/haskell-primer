@@ -157,21 +157,21 @@ import List (nub,sort)
 import qualified List
 -}  
 
+#if __GLASGOW_HASKELL__
+import Text.Read
+import Data.Generics.Basics
+import Data.Generics.Instances
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ >= 503
+import GHC.Word
+import GHC.Exts ( Word(..), Int(..), shiftRL# )
+#elif __GLASGOW_HASKELL__
+import Word
+import GlaExts ( Word(..), Int(..), shiftRL# )
+#else
 import Data.Word
-
+#endif
 
 infixl 9 \\{-This comment teaches CPP correct behaviour -}
 
@@ -185,15 +185,15 @@ intFromNat :: Nat -> Key
 intFromNat w = fromIntegral w
 
 shiftRL :: Nat -> Key -> Nat
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__
+{--------------------------------------------------------------------
+  GHC: use unboxing to get @shiftRL@ inlined.
+--------------------------------------------------------------------}
+shiftRL (W# x) (I# i)
+  = W# (shiftRL# x i)
+#else
 shiftRL x i   = shiftR x i
-
+#endif
 
 {--------------------------------------------------------------------
   Operators
@@ -231,23 +231,23 @@ instance Foldable IntMap where
     foldMap f (Tip _k v) = f v
     foldMap f (Bin _ _ l r) = foldMap f l `mappend` foldMap f r
 
+#if __GLASGOW_HASKELL__
 
+{--------------------------------------------------------------------
+  A Data instance  
+--------------------------------------------------------------------}
 
+-- This instance preserves data abstraction at the cost of inefficiency.
+-- We omit reflection services for the sake of data abstraction.
 
+instance Data a => Data (IntMap a) where
+  gfoldl f z im = z fromList `f` (toList im)
+  toConstr _    = error "toConstr"
+  gunfold _ _   = error "gunfold"
+  dataTypeOf _  = mkNorepType "Data.IntMap.IntMap"
+  dataCast1 f   = gcast1 f
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 {--------------------------------------------------------------------
   Query
@@ -1128,81 +1128,26 @@ showMap (x:xs)
   Read
 --------------------------------------------------------------------}
 instance (Read e) => Read (IntMap e) where
+#ifdef __GLASGOW_HASKELL__
+  readPrec = parens $ prec 10 $ do
+    Ident "fromList" <- lexP
+    xs <- readPrec
+    return (fromList xs)
 
-
-
-
-
-
-
-
+  readListPrec = readListPrecDefault
+#else
   readsPrec p = readParen (p > 10) $ \ r -> do
     ("fromList",s) <- lex r
     (xs,t) <- reads s
     return (fromList xs,t)
-
+#endif
 
 {--------------------------------------------------------------------
   Typeable
 --------------------------------------------------------------------}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-intMapTc = mkTyCon "IntMap"; instance Typeable1 IntMap where { typeOf1 _ = mkTyConApp intMapTc [] }; instance Typeable a => Typeable (IntMap a) where { typeOf = typeOfDefault }
+#include "Typeable.h"
+INSTANCE_TYPEABLE1(IntMap,intMapTc,"IntMap")
 
 {--------------------------------------------------------------------
   Debugging

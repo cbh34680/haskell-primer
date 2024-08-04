@@ -49,9 +49,9 @@ module Distribution.Compiler (
         extensionsToFlags,
         extensionsToGHCFlag, extensionsToHugsFlag,
         extensionsToNHCFlag, extensionsToJHCFlag,
-
-
-
+#ifdef DEBUG
+        hunitTests
+#endif
   ) where
 
 import Distribution.Version (Version(..), showVersion)
@@ -59,9 +59,9 @@ import Language.Haskell.Extension (Extension(..))
 
 import Data.List (nub)
 
-
-
-
+#ifdef DEBUG
+import HUnit (Test)
+#endif
 
 -- ------------------------------------------------------------
 -- * Command Line Types and Exports
@@ -204,7 +204,7 @@ type Opt = String
 -- * Testing
 -- ------------------------------------------------------------
 
-
-
-
-
+#ifdef DEBUG
+hunitTests :: [Test]
+hunitTests = []
+#endif

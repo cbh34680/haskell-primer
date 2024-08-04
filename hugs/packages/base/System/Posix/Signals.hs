@@ -12,730 +12,10 @@
 --
 -----------------------------------------------------------------------------
 
-                                                                              
-                                                                             
-
-                         
-
-
-                          
-
-
-                              
-
-
-                                 
-
-
-                        
-
-
-                                
-
-
-                          
-
-
-                            
-
-
-                         
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                          
-
-
-                         
-
-
-                                
-
-
-                                
-
-
-                              
-
-
-                           
-
-
-                                
-
-
-                          
-
-
-                        
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                             
-
-
-                                
-
-
-                         
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                          
-
-
-                       
-
-
-                           
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                            
-
-
-                             
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                               
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                               
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                            
-
-
-                           
-
-
-                             
-
-
-                            
-
-
-                          
-
-
-                         
-
-
-                              
-
-
-                         
-
-
-                                
-
-
-                         
-
-
-                            
-
-
-                                
-
-
-                                 
-
-
-                                
-
-
-                          
-
-
-                                   
-
-
-                              
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                         
-
-
-                                
-
-
-                            
-
-
-                             
-
-
-                                   
-
-
-                          
-
-
-                         
-
-
-                          
-
-
-                          
-
-
-                         
-
-
-                             
-
-
-                                
-
-
-                           
-
-
-                          
-
-
-                               
-
-
-                         
-
-
-                            
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                          
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                             
-
-
-                           
-
-
-                           
-
-
-                           
-
-
-                               
-
-
-                               
-
-
-                                                        
-
-
-                                                                                     
-
-
-                                                                                    
-                             
-
-                                                         
-
-
-                                                        
-
-
-                                                        
-
-
-                                                  
-
-
-                                                   
-
-
-                                                       
-
-
-                                                      
-                          
-
-                                                       
-
-
-                                                          
-
-
-                                                      
-
-
-                                                           
-
-
-                                                      
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                   
-
-
-                                                         
-
-
-                                                       
-
-
-                                                       
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                          
-
-
-                                                         
-
-
-                                                        
-
-
-                                                               
-
-
-                                                             
-
-
-                                                           
-
-
-                                                              
-
-
-                                                            
-
-
-                                                             
-                              
-
-                                                            
-
-
-                                                           
-
-
-                                                            
-
-
-                                                              
-
-
-                                                           
-
-
-                                                          
-
-
-                                                   
-
-
-                                                       
-
-
-                                                                                                         
-
-
-                                                                                         
-                        
-
-                                                         
-
-
-                                                        
-
-
-                                                   
-
-
-                                                        
-                         
-
-                                                         
-
-
-                                                          
-                           
-
-                                                          
-                           
-
-                                  
-
-
-                                   
-
-
-                                                     
-                         
-
-                                     
-
-
-                                     
-
-
-                                        
-
-
-                                      
-
-
-                                       
-
-
-                                      
-
-
-                                      
-
-
-                                      
-
-
-                                    
-
-
-                                         
-
-
-                                         
-
-
-                                     
-
-
-                                          
-
-
-                                       
-
-
-                                        
-
-
-                                      
-
-
-                                      
-
-
-                                          
-
-
-                                       
-
-
-                                      
-
-
-                                            
-
-
-                                             
-
-
-                                       
-
-
-                                        
-
-
-                                        
-
-
-                                         
-
-
-                                       
-
-
-                                      
-
-
-                                          
-
-
-                                          
-
-
-                                              
-
-
-                                             
-
-
-                                              
-
-
-                                                   
-
-
-                                               
-
-
-                                        
-
-
-                                       
-                         
-
-                                                                              
-
-
-                                              
-
-
-                                                          
-
-
-                                                          
-
-
-                                            
-
-
-                                           
-
-
-                                                      
-
-
-                                                                           
-
-
-                                                            
-                           
-
-                                                                       
-                              
-
-                                                 
-                         
-
-                                                            
-                  
-
-                                                       
-                  
-
-                                                
-                  
-
-
+#include "HsBaseConfig.h"
 
 module System.Posix.Signals (
-
+#ifndef mingw32_HOST_OS
   -- * The Signal type
   Signal,
 
@@ -761,9 +41,9 @@ module System.Posix.Signals (
   backgroundWrite, sigTTOU,
   userDefinedSignal1, sigUSR1,
   userDefinedSignal2, sigUSR2,
-
+#if CONST_SIGPOLL != -1
   pollableEvent, sigPOLL,
-
+#endif
   profilingTimerExpired, sigPROF,
   badSystemCall, sigSYS,
   breakpointTrap, sigTRAP,
@@ -777,11 +57,11 @@ module System.Posix.Signals (
   signalProcess,
   signalProcessGroup,
 
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+  -- * Handling signals
+  Handler(..),
+  installHandler,
+#endif
 
   -- * Signal sets
   SignalSet,
@@ -796,14 +76,14 @@ module System.Posix.Signals (
 
   -- * Waiting for signals
   getPendingSignals,
-
+#ifndef cygwin32_HOST_OS
   awaitSignal,
+#endif
 
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+  -- * The @NOCLDSTOP@ flag
+  setStoppedChildFlag, queryStoppedChildFlag,
+#endif
 
   -- MISSING FUNCTIONALITY:
   -- sigaction(), (inc. the sigaction structure + flags etc.)
@@ -811,7 +91,7 @@ module System.Posix.Signals (
   -- sigaltstack()
   -- sighold, sigignore, sigpause, sigrelse, sigset
   -- siginterrupt
-
+#endif
   ) where
 
 import Prelude -- necessary to get dependencies right
@@ -822,13 +102,13 @@ import System.IO.Unsafe
 import System.Posix.Types
 import System.Posix.Internals
 
-
+#ifndef mingw32_HOST_OS
 -- WHOLE FILE...
 
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+#include "Signals.h"
+import GHC.Conc	( ensureIOManagerIsRunning )
+#endif
 
 -- -----------------------------------------------------------------------------
 -- Specific signals
@@ -839,61 +119,61 @@ nullSignal :: Signal
 nullSignal = 0
 
 sigABRT   :: CInt
-sigABRT   = 6
+sigABRT   = CONST_SIGABRT
 sigALRM   :: CInt
-sigALRM   = 14
+sigALRM   = CONST_SIGALRM
 sigBUS    :: CInt
-sigBUS    = 7
+sigBUS    = CONST_SIGBUS
 sigCHLD   :: CInt
-sigCHLD   = 17
+sigCHLD   = CONST_SIGCHLD
 sigCONT   :: CInt
-sigCONT   = 18
+sigCONT   = CONST_SIGCONT
 sigFPE    :: CInt
-sigFPE    = 8
+sigFPE    = CONST_SIGFPE
 sigHUP    :: CInt
-sigHUP    = 1
+sigHUP    = CONST_SIGHUP
 sigILL    :: CInt
-sigILL    = 4
+sigILL    = CONST_SIGILL
 sigINT    :: CInt
-sigINT    = 2
+sigINT    = CONST_SIGINT
 sigKILL   :: CInt
-sigKILL   = 9
+sigKILL   = CONST_SIGKILL
 sigPIPE   :: CInt
-sigPIPE   = 13
+sigPIPE   = CONST_SIGPIPE
 sigQUIT   :: CInt
-sigQUIT   = 3
+sigQUIT   = CONST_SIGQUIT
 sigSEGV   :: CInt
-sigSEGV   = 11
+sigSEGV   = CONST_SIGSEGV
 sigSTOP   :: CInt
-sigSTOP   = 19
+sigSTOP   = CONST_SIGSTOP
 sigTERM   :: CInt
-sigTERM   = 15
+sigTERM   = CONST_SIGTERM
 sigTSTP   :: CInt
-sigTSTP   = 20
+sigTSTP   = CONST_SIGTSTP
 sigTTIN   :: CInt
-sigTTIN   = 21
+sigTTIN   = CONST_SIGTTIN
 sigTTOU   :: CInt
-sigTTOU   = 22
+sigTTOU   = CONST_SIGTTOU
 sigUSR1   :: CInt
-sigUSR1   = 10
+sigUSR1   = CONST_SIGUSR1
 sigUSR2   :: CInt
-sigUSR2   = 12
+sigUSR2   = CONST_SIGUSR2
 sigPOLL   :: CInt
-sigPOLL   = 29
+sigPOLL   = CONST_SIGPOLL
 sigPROF   :: CInt
-sigPROF   = 27
+sigPROF   = CONST_SIGPROF
 sigSYS    :: CInt
-sigSYS    = 31
+sigSYS    = CONST_SIGSYS
 sigTRAP   :: CInt
-sigTRAP   = 5
+sigTRAP   = CONST_SIGTRAP
 sigURG    :: CInt
-sigURG    = 23
+sigURG    = CONST_SIGURG
 sigVTALRM :: CInt
-sigVTALRM = 26
+sigVTALRM = CONST_SIGVTALRM
 sigXCPU   :: CInt
-sigXCPU   = 24
+sigXCPU   = CONST_SIGXCPU
 sigXFSZ   :: CInt
-sigXFSZ   = 25
+sigXFSZ   = CONST_SIGXFSZ
 
 internalAbort ::Signal
 internalAbort = sigABRT
@@ -955,10 +235,10 @@ userDefinedSignal1 = sigUSR1
 userDefinedSignal2 :: Signal
 userDefinedSignal2 = sigUSR2
 
-
+#if CONST_SIGPOLL != -1
 pollableEvent :: Signal
 pollableEvent = sigPOLL
-
+#endif
 
 profilingTimerExpired :: Signal
 profilingTimerExpired = sigPROF
@@ -1008,87 +288,87 @@ foreign import ccall unsafe "killpg"
 raiseSignal :: Signal -> IO ()
 raiseSignal sig = throwErrnoIfMinus1_ "raiseSignal" (c_raise sig)
 
-
-
-
-
+#if defined(__GLASGOW_HASKELL__) && (defined(openbsd_HOST_OS) || defined(freebsd_HOST_OS))
+foreign import ccall unsafe "genericRaise"
+  c_raise :: CInt -> IO CInt
+#else
 foreign import ccall unsafe "raise"
   c_raise :: CInt -> IO CInt
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
+
+#ifdef __GLASGOW_HASKELL__
+data Handler = Default
+             | Ignore
+	     -- not yet: | Hold 
+             | Catch (IO ())
+             | CatchOnce (IO ())
+
+-- | @installHandler int handler iset@ calls @sigaction@ to install an
+--   interrupt handler for signal @int@.  If @handler@ is @Default@,
+--   @SIG_DFL@ is installed; if @handler@ is @Ignore@, @SIG_IGN@ is
+--   installed; if @handler@ is @Catch action@, a handler is installed
+--   which will invoke @action@ in a new thread when (or shortly after) the
+--   signal is received.
+--   If @iset@ is @Just s@, then the @sa_mask@ of the @sigaction@ structure
+--   is set to @s@; otherwise it is cleared.  The previously installed
+--   signal handler for @int@ is returned
+installHandler :: Signal
+               -> Handler
+               -> Maybe SignalSet	-- ^ other signals to block
+               -> IO Handler		-- ^ old handler
+
+#ifdef __PARALLEL_HASKELL__
+installHandler = 
+  error "installHandler: not available for Parallel Haskell"
+#else
+
+installHandler int handler maybe_mask = do
+    ensureIOManagerIsRunning  -- for the threaded RTS
+    case maybe_mask of
+	Nothing -> install' nullPtr
+        Just (SignalSet x) -> withForeignPtr x $ install' 
+  where 
+    install' mask = 
+      alloca $ \p_sp -> do
+
+      rc <- case handler of
+      	      Default      -> stg_sig_install int STG_SIG_DFL p_sp mask
+      	      Ignore       -> stg_sig_install int STG_SIG_IGN p_sp mask
+      	      Catch m      -> hinstall m p_sp mask int STG_SIG_HAN
+      	      CatchOnce m  -> hinstall m p_sp mask int STG_SIG_RST
+
+      case rc of
+	STG_SIG_DFL -> return Default
+	STG_SIG_IGN -> return Ignore
+	STG_SIG_ERR -> throwErrno "installHandler"
+	STG_SIG_HAN -> do
+        	m <- peekHandler p_sp
+		return (Catch m)
+	STG_SIG_RST -> do
+        	m <- peekHandler p_sp
+		return (CatchOnce m)
+	_other ->
+	   error "internal error: System.Posix.Signals.installHandler"
+
+    hinstall m p_sp mask int reset = do
+      sptr <- newStablePtr m
+      poke p_sp sptr
+      stg_sig_install int reset p_sp mask
+
+    peekHandler p_sp = do
+      osptr <- peek p_sp
+      deRefStablePtr osptr
+
+foreign import ccall unsafe
+  stg_sig_install
+	:: CInt				-- sig no.
+	-> CInt				-- action code (STG_SIG_HAN etc.)
+	-> Ptr (StablePtr (IO ()))	-- (in, out) Haskell handler
+	-> Ptr CSigset			-- (in, out) blocked
+	-> IO CInt			-- (ret) action code
+
+#endif /* !__PARALLEL_HASKELL__ */
+#endif /* __GLASGOW_HASKELL__ */
 
 -- -----------------------------------------------------------------------------
 -- Alarms
@@ -1103,26 +383,26 @@ scheduleAlarm secs = do
 foreign import ccall unsafe "alarm"
   c_alarm :: CUInt -> IO CUInt
 
+#ifdef __GLASGOW_HASKELL__
+-- -----------------------------------------------------------------------------
+-- The NOCLDSTOP flag
 
+foreign import ccall "&nocldstop" nocldstop :: Ptr Int
 
+-- | Tells the system whether or not to set the @SA_NOCLDSTOP@ flag when
+-- installing new signal handlers.
+setStoppedChildFlag :: Bool -> IO Bool
+setStoppedChildFlag b = do
+    rc <- peek nocldstop
+    poke nocldstop $ fromEnum (not b) 
+    return (rc == (0::Int))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- | Queries the current state of the stopped child flag.
+queryStoppedChildFlag :: IO Bool
+queryStoppedChildFlag = do
+    rc <- peek nocldstop
+    return (rc == (0::Int))
+#endif /* __GLASGOW_HASKELL__ */
 
 -- -----------------------------------------------------------------------------
 -- Manipulating signal sets
@@ -1183,19 +463,19 @@ sigProcMask fn how (SignalSet set) =
 -- | @setSignalMask mask@ calls @sigprocmask@ with
 --   @SIG_SETMASK@ to block all interrupts in @mask@.
 setSignalMask :: SignalSet -> IO ()
-setSignalMask set = sigProcMask "setSignalMask" (2 :: CInt) set
+setSignalMask set = sigProcMask "setSignalMask" (CONST_SIG_SETMASK :: CInt) set
 
 -- | @blockSignals mask@ calls @sigprocmask@ with
 --   @SIG_BLOCK@ to add all interrupts in @mask@ to the
 --  set of blocked interrupts.
 blockSignals :: SignalSet -> IO ()
-blockSignals set = sigProcMask "blockSignals" (0 :: CInt) set
+blockSignals set = sigProcMask "blockSignals" (CONST_SIG_BLOCK :: CInt) set
 
 -- | @unblockSignals mask@ calls @sigprocmask@ with
 --   @SIG_UNBLOCK@ to remove all interrupts in @mask@ from the
 --   set of blocked interrupts. 
 unblockSignals :: SignalSet -> IO ()
-unblockSignals set = sigProcMask "unblockSignals" (1 :: CInt) set
+unblockSignals set = sigProcMask "unblockSignals" (CONST_SIG_UNBLOCK :: CInt) set
 
 -- | @getPendingSignals@ calls @sigpending@ to obtain
 --   the set of interrupts which have been received but are currently blocked.
@@ -1206,7 +486,7 @@ getPendingSignals = do
    throwErrnoIfMinus1_ "getPendingSignals" (c_sigpending p)
   return (SignalSet fp)
 
-
+#ifndef cygwin32_HOST_OS
 
 -- | @awaitSignal iset@ suspends execution until an interrupt is received.
 -- If @iset@ is @Just s@, @awaitSignal@ calls @sigsuspend@, installing
@@ -1228,9 +508,9 @@ awaitSignal maybe_sigset = do
  
 foreign import ccall unsafe "sigsuspend"
   c_sigsuspend :: Ptr CSigset -> IO CInt
+#endif
 
-
-
+#ifdef __HUGS__
 foreign import ccall unsafe "sigdelset"
   c_sigdelset   :: Ptr CSigset -> CInt -> IO CInt
 
@@ -1239,19 +519,19 @@ foreign import ccall unsafe "sigfillset"
 
 foreign import ccall unsafe "sigismember"
   c_sigismember :: Ptr CSigset -> CInt -> IO CInt
+#else
+foreign import ccall unsafe "__hscore_sigdelset"
+  c_sigdelset   :: Ptr CSigset -> CInt -> IO CInt
 
+foreign import ccall unsafe "__hscore_sigfillset"
+  c_sigfillset  :: Ptr CSigset -> IO CInt
 
-
-
-
-
-
-
-
-
+foreign import ccall unsafe "__hscore_sigismember"
+  c_sigismember :: Ptr CSigset -> CInt -> IO CInt
+#endif /* __HUGS__ */
 
 foreign import ccall unsafe "sigpending"
   c_sigpending :: Ptr CSigset -> IO CInt
 
-
+#endif /* mingw32_HOST_OS */
 

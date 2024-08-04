@@ -86,33 +86,33 @@ import Data.Int
 import Data.Word
 import Data.List( foldl )
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.Show
+import GHC.Err
+import GHC.Num
+import GHC.Float
+import GHC.Real		( rem, Ratio )
+import GHC.IOBase	(IORef,newIORef,unsafePerformIO)
 
+-- These imports are so we can define Typeable instances
+-- It'd be better to give Typeable instances in the modules themselves
+-- but they all have to be compiled before Typeable
+import GHC.IOBase	( IO, MVar, Exception, ArithException, IOException, 
+			  ArrayException, AsyncException, Handle )
+import GHC.ST		( ST )
+import GHC.STRef	( STRef )
+import GHC.Ptr          ( Ptr, FunPtr )
+import GHC.ForeignPtr   ( ForeignPtr )
+import GHC.Stable	( StablePtr, newStablePtr, freeStablePtr,
+			  deRefStablePtr, castStablePtrToPtr,
+			  castPtrToStablePtr )
+import GHC.Exception	( block )
+import GHC.Arr		( Array, STArray )
 
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Prelude	( Key(..), TypeRep(..), TyCon(..), Ratio,
 			  Exception, ArithException, IOException,
 			  ArrayException, AsyncException, Handle,
@@ -122,104 +122,49 @@ import Hugs.IOExts	( unsafePerformIO, unsafeCoerce )
 	-- For the Typeable instance
 import Hugs.Array	( Array )
 import Hugs.ConcBase	( MVar )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
+
+#ifdef __GLASGOW_HASKELL__
+unsafeCoerce :: a -> b
+unsafeCoerce = unsafeCoerce#
+#endif
+
+#ifdef __NHC__
+import NonStdUnsafeCoerce (unsafeCoerce)
+import NHC.IOExtras (IORef,newIORef,readIORef,writeIORef,unsafePerformIO)
+import IO (Handle)
+import Ratio (Ratio)
+	-- For the Typeable instance
+import NHC.FFI	( Ptr,FunPtr,StablePtr,ForeignPtr )
+import Array	( Array )
+#endif
+
+#include "Typeable.h"
+
+#ifndef __HUGS__
+
+-------------------------------------------------------------
+--
+--		Type representations
+--
+-------------------------------------------------------------
+
+-- | A concrete representation of a (monomorphic) type.  'TypeRep'
+-- supports reasonably efficient equality.
+data TypeRep = TypeRep !Key TyCon [TypeRep] 
+
+-- Compare keys for equality
+instance Eq TypeRep where
+  (TypeRep k1 _ _) == (TypeRep k2 _ _) = k1 == k2
+
+-- | An abstract representation of a type constructor.  'TyCon' objects can
+-- be built using 'mkTyCon'.
+data TyCon = TyCon !Key String
+
+instance Eq TyCon where
+  (TyCon t1 _) == (TyCon t2 _) = t1 == t2
+
+#endif
 
 	-- 
 	-- let fTy = mkTyCon "Foo" in show (mkTyConApp (mkTyCon ",,")
@@ -436,49 +381,49 @@ typeOf6Default x = typeOf7 x `mkAppTy` typeOf (argType x)
    argType :: t a b c d e f g -> a
    argType =  undefined
 
+#ifdef __GLASGOW_HASKELL__
+-- Given a @Typeable@/n/ instance for an /n/-ary type constructor,
+-- define the instances for partial applications.
+-- Programmers using non-GHC implementations must do this manually
+-- for each type constructor.
+-- (The INSTANCE_TYPEABLE/n/ macros in Typeable.h include this.)
 
+-- | One Typeable instance for all Typeable1 instances
+instance (Typeable1 s, Typeable a)
+       => Typeable (s a) where
+  typeOf = typeOfDefault
 
+-- | One Typeable1 instance for all Typeable2 instances
+instance (Typeable2 s, Typeable a)
+       => Typeable1 (s a) where
+  typeOf1 = typeOf1Default
 
+-- | One Typeable2 instance for all Typeable3 instances
+instance (Typeable3 s, Typeable a)
+       => Typeable2 (s a) where
+  typeOf2 = typeOf2Default
 
+-- | One Typeable3 instance for all Typeable4 instances
+instance (Typeable4 s, Typeable a)
+       => Typeable3 (s a) where
+  typeOf3 = typeOf3Default
 
+-- | One Typeable4 instance for all Typeable5 instances
+instance (Typeable5 s, Typeable a)
+       => Typeable4 (s a) where
+  typeOf4 = typeOf4Default
 
+-- | One Typeable5 instance for all Typeable6 instances
+instance (Typeable6 s, Typeable a)
+       => Typeable5 (s a) where
+  typeOf5 = typeOf5Default
 
+-- | One Typeable6 instance for all Typeable7 instances
+instance (Typeable7 s, Typeable a)
+       => Typeable6 (s a) where
+  typeOf6 = typeOf6Default
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif /* __GLASGOW_HASKELL__ */
 
 -------------------------------------------------------------
 --
@@ -530,40 +475,40 @@ gcast2 x = r
 --
 -------------------------------------------------------------
 
-unitTc = mkTyCon "()"; instance Typeable () where { typeOf _ = mkTyConApp unitTc [] }
-listTc = mkTyCon "[]"; instance Typeable1 [] where { typeOf1 _ = mkTyConApp listTc [] }; instance Typeable a => Typeable ([] a) where { typeOf = typeOfDefault }
-maybeTc = mkTyCon "Maybe"; instance Typeable1 Maybe where { typeOf1 _ = mkTyConApp maybeTc [] }; instance Typeable a => Typeable (Maybe a) where { typeOf = typeOfDefault }
-ratioTc = mkTyCon "Ratio"; instance Typeable1 Ratio where { typeOf1 _ = mkTyConApp ratioTc [] }; instance Typeable a => Typeable (Ratio a) where { typeOf = typeOfDefault }
-eitherTc = mkTyCon "Either"; instance Typeable2 Either where { typeOf2 _ = mkTyConApp eitherTc [] }; instance Typeable a => Typeable1 (Either a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (Either a b) where {   typeOf = typeOfDefault }
-funTc = mkTyCon "->"; instance Typeable2 (->) where { typeOf2 _ = mkTyConApp funTc [] }; instance Typeable a => Typeable1 ((->) a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable ((->) a b) where {   typeOf = typeOfDefault }
-ioTc = mkTyCon "IO"; instance Typeable1 IO where { typeOf1 _ = mkTyConApp ioTc [] }; instance Typeable a => Typeable (IO a) where { typeOf = typeOfDefault }
+INSTANCE_TYPEABLE0((),unitTc,"()")
+INSTANCE_TYPEABLE1([],listTc,"[]")
+INSTANCE_TYPEABLE1(Maybe,maybeTc,"Maybe")
+INSTANCE_TYPEABLE1(Ratio,ratioTc,"Ratio")
+INSTANCE_TYPEABLE2(Either,eitherTc,"Either")
+INSTANCE_TYPEABLE2((->),funTc,"->")
+INSTANCE_TYPEABLE1(IO,ioTc,"IO")
 
-
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__)
 -- Types defined in GHC.IOBase
-mvarTc = mkTyCon "MVar"; instance Typeable1 MVar where { typeOf1 _ = mkTyConApp mvarTc [] }; instance Typeable a => Typeable (MVar a) where { typeOf = typeOfDefault }
-exceptionTc = mkTyCon "Exception"; instance Typeable Exception where { typeOf _ = mkTyConApp exceptionTc [] }
-ioExceptionTc = mkTyCon "IOException"; instance Typeable IOException where { typeOf _ = mkTyConApp ioExceptionTc [] }
-arithExceptionTc = mkTyCon "ArithException"; instance Typeable ArithException where { typeOf _ = mkTyConApp arithExceptionTc [] }
-arrayExceptionTc = mkTyCon "ArrayException"; instance Typeable ArrayException where { typeOf _ = mkTyConApp arrayExceptionTc [] }
-asyncExceptionTc = mkTyCon "AsyncException"; instance Typeable AsyncException where { typeOf _ = mkTyConApp asyncExceptionTc [] }
-
+INSTANCE_TYPEABLE1(MVar,mvarTc,"MVar" )
+INSTANCE_TYPEABLE0(Exception,exceptionTc,"Exception")
+INSTANCE_TYPEABLE0(IOException,ioExceptionTc,"IOException")
+INSTANCE_TYPEABLE0(ArithException,arithExceptionTc,"ArithException")
+INSTANCE_TYPEABLE0(ArrayException,arrayExceptionTc,"ArrayException")
+INSTANCE_TYPEABLE0(AsyncException,asyncExceptionTc,"AsyncException")
+#endif
 
 -- Types defined in GHC.Arr
-arrayTc = mkTyCon "Array"; instance Typeable2 Array where { typeOf2 _ = mkTyConApp arrayTc [] }; instance Typeable a => Typeable1 (Array a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (Array a b) where {   typeOf = typeOfDefault }
+INSTANCE_TYPEABLE2(Array,arrayTc,"Array")
 
+#ifdef __GLASGOW_HASKELL__
+-- Hugs has these too, but their Typeable<n> instances are defined
+-- elsewhere to keep this module within Haskell 98.
+-- This is important because every invocation of runhugs or ffihugs
+-- uses this module via Data.Dynamic.
+INSTANCE_TYPEABLE2(ST,stTc,"ST")
+INSTANCE_TYPEABLE2(STRef,stRefTc,"STRef")
+INSTANCE_TYPEABLE3(STArray,sTArrayTc,"STArray")
+#endif
 
-
-
-
-
-
-
-
-
-
-
-pairTc = mkTyCon ","; instance Typeable2 (,) where { typeOf2 _ = mkTyConApp pairTc [] }; instance Typeable a => Typeable1 ((,) a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable ((,) a b) where {   typeOf = typeOfDefault }
-tup3Tc = mkTyCon ",,"; instance Typeable3 (,,) where { typeOf3 _ = mkTyConApp tup3Tc [] }; instance Typeable a => Typeable2 ((,,) a) where {   typeOf2 = typeOf2Default }; instance (Typeable a, Typeable b) => Typeable1 ((,,) a b) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b, Typeable c) => Typeable ((,,) a b c) where {   typeOf = typeOfDefault }
+#ifndef __NHC__
+INSTANCE_TYPEABLE2((,),pairTc,",")
+INSTANCE_TYPEABLE3((,,),tup3Tc,",,")
 
 tup4Tc :: TyCon
 tup4Tc = mkTyCon ",,,"
@@ -588,13 +533,13 @@ tup7Tc = mkTyCon ",,,,,,"
 
 instance Typeable7 (,,,,,,) where
   typeOf7 tu = mkTyConApp tup7Tc []
+#endif /* __NHC__ */
 
-
-ptrTc = mkTyCon "Ptr"; instance Typeable1 Ptr where { typeOf1 _ = mkTyConApp ptrTc [] }; instance Typeable a => Typeable (Ptr a) where { typeOf = typeOfDefault }
-funPtrTc = mkTyCon "FunPtr"; instance Typeable1 FunPtr where { typeOf1 _ = mkTyConApp funPtrTc [] }; instance Typeable a => Typeable (FunPtr a) where { typeOf = typeOfDefault }
-foreignPtrTc = mkTyCon "ForeignPtr"; instance Typeable1 ForeignPtr where { typeOf1 _ = mkTyConApp foreignPtrTc [] }; instance Typeable a => Typeable (ForeignPtr a) where { typeOf = typeOfDefault }
-stablePtrTc = mkTyCon "StablePtr"; instance Typeable1 StablePtr where { typeOf1 _ = mkTyConApp stablePtrTc [] }; instance Typeable a => Typeable (StablePtr a) where { typeOf = typeOfDefault }
-iORefTc = mkTyCon "IORef"; instance Typeable1 IORef where { typeOf1 _ = mkTyConApp iORefTc [] }; instance Typeable a => Typeable (IORef a) where { typeOf = typeOfDefault }
+INSTANCE_TYPEABLE1(Ptr,ptrTc,"Ptr")
+INSTANCE_TYPEABLE1(FunPtr,funPtrTc,"FunPtr")
+INSTANCE_TYPEABLE1(ForeignPtr,foreignPtrTc,"ForeignPtr")
+INSTANCE_TYPEABLE1(StablePtr,stablePtrTc,"StablePtr")
+INSTANCE_TYPEABLE1(IORef,iORefTc,"IORef")
 
 -------------------------------------------------------
 --
@@ -602,34 +547,34 @@ iORefTc = mkTyCon "IORef"; instance Typeable1 IORef where { typeOf1 _ = mkTyConA
 --
 -------------------------------------------------------
 
-boolTc = mkTyCon "Bool"; instance Typeable Bool where { typeOf _ = mkTyConApp boolTc [] }
-charTc = mkTyCon "Char"; instance Typeable Char where { typeOf _ = mkTyConApp charTc [] }
-floatTc = mkTyCon "Float"; instance Typeable Float where { typeOf _ = mkTyConApp floatTc [] }
-doubleTc = mkTyCon "Double"; instance Typeable Double where { typeOf _ = mkTyConApp doubleTc [] }
-intTc = mkTyCon "Int"; instance Typeable Int where { typeOf _ = mkTyConApp intTc [] }
+INSTANCE_TYPEABLE0(Bool,boolTc,"Bool")
+INSTANCE_TYPEABLE0(Char,charTc,"Char")
+INSTANCE_TYPEABLE0(Float,floatTc,"Float")
+INSTANCE_TYPEABLE0(Double,doubleTc,"Double")
+INSTANCE_TYPEABLE0(Int,intTc,"Int")
+#ifndef __NHC__
+INSTANCE_TYPEABLE0(Word,wordTc,"Word" )
+#endif
+INSTANCE_TYPEABLE0(Integer,integerTc,"Integer")
+INSTANCE_TYPEABLE0(Ordering,orderingTc,"Ordering")
+INSTANCE_TYPEABLE0(Handle,handleTc,"Handle")
 
-wordTc = mkTyCon "Word"; instance Typeable Word where { typeOf _ = mkTyConApp wordTc [] }
+INSTANCE_TYPEABLE0(Int8,int8Tc,"Int8")
+INSTANCE_TYPEABLE0(Int16,int16Tc,"Int16")
+INSTANCE_TYPEABLE0(Int32,int32Tc,"Int32")
+INSTANCE_TYPEABLE0(Int64,int64Tc,"Int64")
 
-integerTc = mkTyCon "Integer"; instance Typeable Integer where { typeOf _ = mkTyConApp integerTc [] }
-orderingTc = mkTyCon "Ordering"; instance Typeable Ordering where { typeOf _ = mkTyConApp orderingTc [] }
-handleTc = mkTyCon "Handle"; instance Typeable Handle where { typeOf _ = mkTyConApp handleTc [] }
+INSTANCE_TYPEABLE0(Word8,word8Tc,"Word8" )
+INSTANCE_TYPEABLE0(Word16,word16Tc,"Word16")
+INSTANCE_TYPEABLE0(Word32,word32Tc,"Word32")
+INSTANCE_TYPEABLE0(Word64,word64Tc,"Word64")
 
-int8Tc = mkTyCon "Int8"; instance Typeable Int8 where { typeOf _ = mkTyConApp int8Tc [] }
-int16Tc = mkTyCon "Int16"; instance Typeable Int16 where { typeOf _ = mkTyConApp int16Tc [] }
-int32Tc = mkTyCon "Int32"; instance Typeable Int32 where { typeOf _ = mkTyConApp int32Tc [] }
-int64Tc = mkTyCon "Int64"; instance Typeable Int64 where { typeOf _ = mkTyConApp int64Tc [] }
+INSTANCE_TYPEABLE0(TyCon,tyconTc,"TyCon")
+INSTANCE_TYPEABLE0(TypeRep,typeRepTc,"TypeRep")
 
-word8Tc = mkTyCon "Word8"; instance Typeable Word8 where { typeOf _ = mkTyConApp word8Tc [] }
-word16Tc = mkTyCon "Word16"; instance Typeable Word16 where { typeOf _ = mkTyConApp word16Tc [] }
-word32Tc = mkTyCon "Word32"; instance Typeable Word32 where { typeOf _ = mkTyConApp word32Tc [] }
-word64Tc = mkTyCon "Word64"; instance Typeable Word64 where { typeOf _ = mkTyConApp word64Tc [] }
-
-tyconTc = mkTyCon "TyCon"; instance Typeable TyCon where { typeOf _ = mkTyConApp tyconTc [] }
-typeRepTc = mkTyCon "TypeRep"; instance Typeable TypeRep where { typeOf _ = mkTyConApp typeRepTc [] }
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+INSTANCE_TYPEABLE0(RealWorld,realWorldTc,"RealWorld")
+#endif
 
 ---------------------------------------------
 --
@@ -637,9 +582,9 @@ typeRepTc = mkTyCon "TypeRep"; instance Typeable TypeRep where { typeOf _ = mkTy
 --
 ---------------------------------------------
 
-
-
-
+#ifndef __HUGS__
+newtype Key = Key Int deriving( Eq )
+#endif
 
 data KeyPr = KeyPr !Key !Key deriving( Eq )
 
@@ -651,10 +596,10 @@ data Cache = Cache { next_key :: !(IORef Key),	-- Not used by GHC (calls genSym 
 		     ap_tbl   :: !(HT.HashTable KeyPr Key) }
 
 {-# NOINLINE cache #-}
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+foreign import ccall unsafe "RtsTypeable.h getOrSetTypeableStore"
+    getOrSetTypeableStore :: Ptr a -> IO (Ptr a)
+#endif
 
 cache :: Cache
 cache = unsafePerformIO $ do
@@ -664,34 +609,34 @@ cache = unsafePerformIO $ do
 		let ret = Cache {	next_key = key_loc,
 					tc_tbl = empty_tc_tbl, 
 					ap_tbl = empty_ap_tbl }
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+		block $ do
+			stable_ref <- newStablePtr ret
+			let ref = castStablePtrToPtr stable_ref
+			ref2 <- getOrSetTypeableStore ref
+			if ref==ref2
+				then deRefStablePtr stable_ref
+				else do
+					freeStablePtr stable_ref
+					deRefStablePtr
+						(castPtrToStablePtr ref2)
+#else
 		return ret
-
+#endif
 
 newKey :: IORef Key -> IO Key
-
-
-
+#ifdef __GLASGOW_HASKELL__
+newKey kloc = do i <- genSym; return (Key i)
+#else
 newKey kloc = do { k@(Key i) <- readIORef kloc ;
 		   writeIORef kloc (Key (i+1)) ;
 		   return k }
+#endif
 
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+foreign import ccall unsafe "genSymZh"
+  genSym :: IO Int
+#endif
 
 mkTyConKey :: String -> Key
 mkTyConKey str 

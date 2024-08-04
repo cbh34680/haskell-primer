@@ -43,86 +43,31 @@ module Data.Dynamic
 import Data.Typeable
 import Data.Maybe
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.Show
+import GHC.Err
+import GHC.Num
+#endif
 
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Prelude
 import Hugs.IO
 import Hugs.IORef
 import Hugs.IOExts
-
-
-
-
-
-
-
-
-
-
-
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
+
+#ifdef __GLASGOW_HASKELL__
+unsafeCoerce :: a -> b
+unsafeCoerce = unsafeCoerce#
+#endif
+
+#ifdef __NHC__
+import NonStdUnsafeCoerce (unsafeCoerce)
+import NHC.IOExtras (IORef,newIORef,readIORef,writeIORef,unsafePerformIO)
+#endif
+
+#include "Typeable.h"
 
 -------------------------------------------------------------
 --
@@ -140,11 +85,11 @@ import Hugs.IOExts
   'Show'ing a value of type 'Dynamic' returns a pretty-printed representation
   of the object\'s type; useful for debugging.
 -}
+#ifndef __HUGS__
+data Dynamic = Dynamic TypeRep Obj
+#endif
 
-
-
-
-dynamicTc = mkTyCon "Dynamic"; instance Typeable Dynamic where { typeOf _ = mkTyConApp dynamicTc [] }
+INSTANCE_TYPEABLE0(Dynamic,dynamicTc,"Dynamic")
 
 instance Show Dynamic where
    -- the instance just prints the type representation.
@@ -153,20 +98,20 @@ instance Show Dynamic where
 	  showsPrec 0 t   . 
 	  showString ">>"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+type Obj = forall a . a
+ -- Dummy type to hold the dynamically typed value.
+ --
+ -- In GHC's new eval/apply execution model this type must
+ -- be polymorphic.  It can't be a constructor, because then
+ -- GHC will use the constructor convention when evaluating it,
+ -- and this will go wrong if the object is really a function.  On
+ -- the other hand, if we use a polymorphic type, GHC will use
+ -- a fallback convention for evaluating it that works for all types.
+ -- (using a function type here would also work).
+#elif !defined(__HUGS__)
+data Obj = Obj
+#endif
 
 -- | Converts an arbitrary value into an object of type 'Dynamic'.  
 --

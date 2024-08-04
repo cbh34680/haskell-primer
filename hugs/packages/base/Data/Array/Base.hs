@@ -28,21 +28,21 @@ import Data.Word
 import Foreign.Ptr
 import Foreign.StablePtr
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Arr		( STArray, unsafeIndex )
+import qualified GHC.Arr as Arr
+import qualified GHC.Arr as ArrST
+import GHC.ST		( ST(..), runST )
+import GHC.Base
+import GHC.Word		( Word(..) )
+import GHC.Ptr		( Ptr(..), FunPtr(..), nullPtr, nullFunPtr )
+import GHC.Float	( Float(..), Double(..) )
+import GHC.Stable	( StablePtr(..) )
+import GHC.Int		( Int8(..),  Int16(..),  Int32(..),  Int64(..) )
+import GHC.Word		( Word8(..), Word16(..), Word32(..), Word64(..) )
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Data.Bits
 import Foreign.Storable
 import qualified Hugs.Array as Arr
@@ -50,281 +50,12 @@ import qualified Hugs.ST as ArrST
 import Hugs.Array ( unsafeIndex )
 import Hugs.ST ( STArray, ST(..), runST )
 import Hugs.ByteArray
-
+#endif
 
 import Data.Typeable
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+#include "Typeable.h"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                                                                                                                                                                        
-
-                                                                        
-                                                                          
-
-                               
-                                                                                                            
-
-
-
-
-
-
-
-                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-                                                         
-
-
-
-
-
-
-
-
-
-
-
-
-                                
-
-
-                                  
-
-
-                                 
-
-
-                               
-
-
-                                
-
-
-                                     
-
-
-                                 
-
-
-                                         
-
-
-                                        
-
-
-                                         
-
-
-                                              
-
-
-                                          
-
-
-                                  
-
-
-                                                           
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                         
-
-
-                                                          
-
-
-                                                         
-
-
-                                                           
-
-
-                                                            
-
-
-                                                         
-
-
-                                                                              
-
-
-                                              
-
-
-                                                          
-
-
-                                                          
-
-
-                                            
-
-
-                                                
-
-
-                                                  
-
-
-                                                 
-
-
-                                               
-
-
-                                                
-
-
-                                                     
-
-
-                                                 
-
-
-                                                         
-
-
-                                                        
-
-
-                                                         
-
-
-                                                              
-
-
-                                                          
-
-
-                                                  
-
-
-                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#include "MachDeps.h"
 
 -----------------------------------------------------------------------------
 -- Class of immutable arrays
@@ -484,46 +215,46 @@ listUArrayST (l,u) es = do
 -- calls seem to be floated out, then floated back into the middle
 -- of listUArrayST, so I was not able to do this.
 
+#ifdef __GLASGOW_HASKELL__
+type ListUArray e = forall i . Ix i => (i,i) -> [e] -> UArray i e
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+{-# RULES
+"listArray/UArray/Bool"      listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Bool
+"listArray/UArray/Char"      listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Char
+"listArray/UArray/Int"       listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Int
+"listArray/UArray/Word"      listArray	
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Word
+"listArray/UArray/Ptr"       listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray (Ptr a)
+"listArray/UArray/FunPtr"    listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray (FunPtr a)
+"listArray/UArray/Float"     listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Float
+"listArray/UArray/Double"    listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Double
+"listArray/UArray/StablePtr" listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray (StablePtr a)
+"listArray/UArray/Int8"      listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Int8
+"listArray/UArray/Int16"     listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Int16
+"listArray/UArray/Int32"     listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Int32
+"listArray/UArray/Int64"     listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Int64
+"listArray/UArray/Word8"     listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Word8
+"listArray/UArray/Word16"    listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Word16
+"listArray/UArray/Word32"    listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Word32
+"listArray/UArray/Word64"    listArray
+   = (\lu es -> runST (listUArrayST lu es >>= unsafeFreezeSTUArray)) :: ListUArray Word64
+    #-}
+#endif
 
 {-# INLINE (!) #-}
 -- | Returns the element of an immutable array at the specified index.
@@ -656,14 +387,14 @@ instance IArray Arr.Array e where
 -- get the benefits of unboxed arrays (don\'t forget to import
 -- "Data.Array.Unboxed" instead of "Data.Array").
 --
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+data UArray i e = UArray !i !i ByteArray#
+#endif
+#ifdef __HUGS__
 data UArray i e = UArray !i !i !ByteArray
+#endif
 
-
-uArrayTc = mkTyCon "UArray"; instance Typeable2 UArray where { typeOf2 _ = mkTyConApp uArrayTc [] }; instance Typeable a => Typeable1 (UArray a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (UArray a b) where {   typeOf = typeOfDefault }
+INSTANCE_TYPEABLE2(UArray,uArrayTc,"UArray")
 
 {-# INLINE unsafeArrayUArray #-}
 unsafeArrayUArray :: (MArray (STUArray s) e (ST s), Ix i)
@@ -673,20 +404,20 @@ unsafeArrayUArray (l,u) ies default_elem = do
     sequence_ [unsafeWrite marr i e | (i, e) <- ies]
     unsafeFreezeSTUArray marr
 
+#ifdef __GLASGOW_HASKELL__
+{-# INLINE unsafeFreezeSTUArray #-}
+unsafeFreezeSTUArray :: STUArray s i e -> ST s (UArray i e)
+unsafeFreezeSTUArray (STUArray l u marr#) = ST $ \s1# ->
+    case unsafeFreezeByteArray# marr# s1# of { (# s2#, arr# #) ->
+    (# s2#, UArray l u arr# #) }
+#endif
 
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 unsafeFreezeSTUArray :: STUArray s i e -> ST s (UArray i e)
 unsafeFreezeSTUArray (STUArray l u marr) = do
     arr <- unsafeFreezeMutableByteArray marr
     return (UArray l u arr)
-
+#endif
 
 {-# INLINE unsafeReplaceUArray #-}
 unsafeReplaceUArray :: (MArray (STUArray s) e (ST s), Ix i)
@@ -763,26 +494,26 @@ showsIArray p a =
 -----------------------------------------------------------------------------
 -- Flat unboxed arrays: instances
 
-
+#ifdef __HUGS__
 unsafeAtBArray :: Storable e => UArray i e -> Int -> e
 unsafeAtBArray (UArray _ _ arr) = readByteArray arr
-
+#endif
 
 instance IArray UArray Bool where
     {-# INLINE bounds #-}
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies False)
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) =
+        (indexWordArray# arr# (bOOL_INDEX i#) `and#` bOOL_BIT i#)
+        `neWord#` int2Word# 0#
+#endif
+#ifdef __HUGS__
     unsafeAt (UArray _ _ arr) i =
 	testBit (readByteArray arr (bOOL_INDEX i)::BitSet) (bOOL_SUBINDEX i)
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -796,12 +527,12 @@ instance IArray UArray Char where
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies '\0')
     {-# INLINE unsafeAt #-}
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    unsafeAt (UArray _ _ arr#) (I# i#) = C# (indexWideCharArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -814,13 +545,13 @@ instance IArray UArray Int where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = I# (indexIntArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -833,13 +564,13 @@ instance IArray UArray Word where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = W# (indexWordArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -853,12 +584,12 @@ instance IArray UArray (Ptr a) where
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies nullPtr)
     {-# INLINE unsafeAt #-}
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    unsafeAt (UArray _ _ arr#) (I# i#) = Ptr (indexAddrArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -871,13 +602,13 @@ instance IArray UArray (FunPtr a) where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies nullFunPtr)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = FunPtr (indexAddrArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -890,13 +621,13 @@ instance IArray UArray Float where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = F# (indexFloatArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -909,13 +640,13 @@ instance IArray UArray Double where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = D# (indexDoubleArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -928,13 +659,13 @@ instance IArray UArray (StablePtr a) where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies nullStablePtr)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = StablePtr (indexStablePtrArray# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -943,25 +674,25 @@ instance IArray UArray (StablePtr a) where
     unsafeAccumArray f init lu ies = runST (unsafeAccumArrayUArray f init lu ies)
 
 -- bogus StablePtr value for initialising a UArray of StablePtr.
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+nullStablePtr = StablePtr (unsafeCoerce# 0#)
+#endif
+#ifdef __HUGS__
 nullStablePtr = castPtrToStablePtr nullPtr
-
+#endif
 
 instance IArray UArray Int8 where
     {-# INLINE bounds #-}
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = I8# (indexInt8Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -974,13 +705,13 @@ instance IArray UArray Int16 where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = I16# (indexInt16Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -993,13 +724,13 @@ instance IArray UArray Int32 where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = I32# (indexInt32Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -1012,13 +743,13 @@ instance IArray UArray Int64 where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = I64# (indexInt64Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -1031,13 +762,13 @@ instance IArray UArray Word8 where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = W8# (indexWord8Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -1050,13 +781,13 @@ instance IArray UArray Word16 where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = W16# (indexWord16Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -1069,13 +800,13 @@ instance IArray UArray Word32 where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = W32# (indexWord32Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -1088,13 +819,13 @@ instance IArray UArray Word64 where
     bounds (UArray l u _) = (l,u)
     {-# INLINE unsafeArray #-}
     unsafeArray lu ies = runST (unsafeArrayUArray lu ies 0)
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+    {-# INLINE unsafeAt #-}
+    unsafeAt (UArray _ _ arr#) (I# i#) = W64# (indexWord64Array# arr# i#)
+#endif
+#ifdef __HUGS__
     unsafeAt = unsafeAtBArray
-
+#endif
     {-# INLINE unsafeReplace #-}
     unsafeReplace arr ies = runST (unsafeReplaceUArray arr ies)
     {-# INLINE unsafeAccum #-}
@@ -1262,9 +993,9 @@ instance MArray (STArray s) e (Lazy.ST s) where
     {-# INLINE unsafeWrite #-}
     unsafeWrite arr i e = strictToLazyST (ArrST.unsafeWriteSTArray arr i e)
 
-
-sTArrayTc = mkTyCon "STArray"; instance Typeable3 STArray where { typeOf3 _ = mkTyConApp sTArrayTc [] }; instance Typeable a => Typeable2 (STArray a) where {   typeOf2 = typeOf2Default }; instance (Typeable a, Typeable b) => Typeable1 (STArray a b) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b, Typeable c) => Typeable (STArray a b c) where {   typeOf = typeOfDefault }
-
+#ifdef __HUGS__
+INSTANCE_TYPEABLE3(STArray,sTArrayTc,"STArray")
+#endif
 
 -----------------------------------------------------------------------------
 -- Flat unboxed mutable arrays (ST monad)
@@ -1284,349 +1015,349 @@ sTArrayTc = mkTyCon "STArray"; instance Typeable3 STArray where { typeOf3 _ = mk
 -- element type.  However, 'STUArray' is strict in its elements - so
 -- don\'t use 'STUArray' if you require the non-strictness that
 -- 'STArray' provides.
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+data STUArray s i a = STUArray !i !i (MutableByteArray# s)
+#endif
+#ifdef __HUGS__
 data STUArray s i a = STUArray !i !i !(MutableByteArray s)
-
-
-stUArrayTc = mkTyCon "STUArray"; instance Typeable3 STUArray where { typeOf3 _ = mkTyConApp stUArrayTc [] }; instance Typeable a => Typeable2 (STUArray a) where {   typeOf2 = typeOf2Default }; instance (Typeable a, Typeable b) => Typeable1 (STUArray a b) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b, Typeable c) => Typeable (STUArray a b c) where {   typeOf = typeOfDefault }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
+
+INSTANCE_TYPEABLE3(STUArray,stUArrayTc,"STUArray")
+
+#ifdef __GLASGOW_HASKELL__
+instance MArray (STUArray s) Bool (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray #-}
+    newArray (l,u) init = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (bOOL_SCALE n#) s1# of { (# s2#, marr# #) ->
+        case bOOL_WORD_SCALE n#         of { n'# ->
+        let loop i# s3# | i# ==# n'# = s3#
+                        | otherwise  =
+                case writeWordArray# marr# i# e# s3# of { s4# ->
+                loop (i# +# 1#) s4# } in
+        case loop 0# s2#                of { s3# ->
+        (# s3#, STUArray l u marr# #) }}}}
+      where
+        W# e# = if init then maxBound else 0
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (bOOL_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readWordArray# marr# (bOOL_INDEX i#) s1# of { (# s2#, e# #) ->
+        (# s2#, (e# `and#` bOOL_BIT i#) `neWord#` int2Word# 0# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) e = ST $ \s1# ->
+        case bOOL_INDEX i#              of { j# ->
+        case readWordArray# marr# j# s1# of { (# s2#, old# #) ->
+        case if e then old# `or#` bOOL_BIT i#
+             else old# `and#` bOOL_NOT_BIT i# of { e# ->
+        case writeWordArray# marr# j# e# s2# of { s3# ->
+        (# s3#, () #) }}}}
+
+instance MArray (STUArray s) Char (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (n# *# 4#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readWideCharArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, C# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (C# e#) = ST $ \s1# ->
+        case writeWideCharArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Int (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (wORD_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readIntArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, I# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (I# e#) = ST $ \s1# ->
+        case writeIntArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Word (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (wORD_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readWordArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, W# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (W# e#) = ST $ \s1# ->
+        case writeWordArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) (Ptr a) (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (wORD_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readAddrArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, Ptr e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (Ptr e#) = ST $ \s1# ->
+        case writeAddrArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) (FunPtr a) (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (wORD_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readAddrArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, FunPtr e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (FunPtr e#) = ST $ \s1# ->
+        case writeAddrArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Float (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (fLOAT_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readFloatArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, F# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (F# e#) = ST $ \s1# ->
+        case writeFloatArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Double (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (dOUBLE_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readDoubleArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, D# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (D# e#) = ST $ \s1# ->
+        case writeDoubleArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) (StablePtr a) (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (wORD_SCALE n#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readStablePtrArray# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2# , StablePtr e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (StablePtr e#) = ST $ \s1# ->
+        case writeStablePtrArray# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Int8 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# n# s1#       of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readInt8Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, I8# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (I8# e#) = ST $ \s1# ->
+        case writeInt8Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Int16 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (n# *# 2#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readInt16Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, I16# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (I16# e#) = ST $ \s1# ->
+        case writeInt16Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Int32 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (n# *# 4#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readInt32Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, I32# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (I32# e#) = ST $ \s1# ->
+        case writeInt32Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Int64 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (n# *# 8#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# -> 
+        case readInt64Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, I64# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (I64# e#) = ST $ \s1# ->
+        case writeInt64Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Word8 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# n# s1#       of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readWord8Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, W8# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (W8# e#) = ST $ \s1# ->
+        case writeWord8Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Word16 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (n# *# 2#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readWord16Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, W16# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (W16# e#) = ST $ \s1# ->
+        case writeWord16Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Word32 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (n# *# 4#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readWord32Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, W32# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (W32# e#) = ST $ \s1# ->
+        case writeWord32Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+instance MArray (STUArray s) Word64 (ST s) where
+    {-# INLINE getBounds #-}
+    getBounds (STUArray l u _) = return (l,u)
+    {-# INLINE newArray_ #-}
+    newArray_ (l,u) = ST $ \s1# ->
+        case rangeSize (l,u)            of { I# n# ->
+        case newByteArray# (n# *# 8#) s1# of { (# s2#, marr# #) ->
+        (# s2#, STUArray l u marr# #) }}
+    {-# INLINE unsafeRead #-}
+    unsafeRead (STUArray _ _ marr#) (I# i#) = ST $ \s1# ->
+        case readWord64Array# marr# i# s1# of { (# s2#, e# #) ->
+        (# s2#, W64# e# #) }
+    {-# INLINE unsafeWrite #-}
+    unsafeWrite (STUArray _ _ marr#) (I# i#) (W64# e#) = ST $ \s1# ->
+        case writeWord64Array# marr# i# e# s1# of { s2# ->
+        (# s2#, () #) }
+
+-----------------------------------------------------------------------------
+-- Translation between elements and bytes
+
+bOOL_SCALE, bOOL_WORD_SCALE,
+  wORD_SCALE, dOUBLE_SCALE, fLOAT_SCALE :: Int# -> Int#
+bOOL_SCALE n# = (n# +# last#) `uncheckedIShiftRA#` 3#
+  where I# last# = SIZEOF_HSWORD * 8 - 1
+bOOL_WORD_SCALE n# = bOOL_INDEX (n# +# last#)
+  where I# last# = SIZEOF_HSWORD * 8 - 1
+wORD_SCALE   n# = scale# *# n# where I# scale# = SIZEOF_HSWORD
+dOUBLE_SCALE n# = scale# *# n# where I# scale# = SIZEOF_HSDOUBLE
+fLOAT_SCALE  n# = scale# *# n# where I# scale# = SIZEOF_HSFLOAT
+
+bOOL_INDEX :: Int# -> Int#
+#if SIZEOF_HSWORD == 4
+bOOL_INDEX i# = i# `uncheckedIShiftRA#` 5#
+#elif SIZEOF_HSWORD == 8
+bOOL_INDEX i# = i# `uncheckedIShiftRA#` 6#
+#endif
+
+bOOL_BIT, bOOL_NOT_BIT :: Int# -> Word#
+bOOL_BIT     n# = int2Word# 1# `uncheckedShiftL#` (word2Int# (int2Word# n# `and#` mask#))
+  where W# mask# = SIZEOF_HSWORD * 8 - 1
+bOOL_NOT_BIT n# = bOOL_BIT n# `xor#` mb# where W# mb# = maxBound
+#endif /* __GLASGOW_HASKELL__ */
+
+#ifdef __HUGS__
 newMBArray_ :: (Ix i, Storable e) => (i,i) -> ST s (STUArray s i e)
 newMBArray_ = makeArray undefined
   where
@@ -1768,7 +1499,7 @@ bOOL_INDEX i = i `div` bitSetSize
 
 bOOL_SUBINDEX :: Int -> Int
 bOOL_SUBINDEX i = i `mod` bitSetSize
-
+#endif /* __HUGS__ */
 
 -----------------------------------------------------------------------------
 -- Freezing
@@ -1783,20 +1514,20 @@ freeze marr = do
                    | i <- [0 .. rangeSize (l,u) - 1]]
   return (unsafeArray (l,u) ies)
 
+#ifdef __GLASGOW_HASKELL__
+freezeSTUArray :: Ix i => STUArray s i e -> ST s (UArray i e)
+freezeSTUArray (STUArray l u marr#) = ST $ \s1# ->
+    case sizeofMutableByteArray# marr#  of { n# ->
+    case newByteArray# n# s1#           of { (# s2#, marr'# #) ->
+    case unsafeCoerce# memcpy marr'# marr# n# s2# of { (# s3#, () #) ->
+    case unsafeFreezeByteArray# marr'# s3# of { (# s4#, arr# #) ->
+    (# s4#, UArray l u arr# #) }}}}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+{-# RULES
+"freeze/STArray"  freeze = ArrST.freezeSTArray
+"freeze/STUArray" freeze = freezeSTUArray
+    #-}
+#endif /* __GLASGOW_HASKELL__ */
 
 -- In-place conversion of mutable arrays to immutable ones places
 -- a proof obligation on the user: no other parts of your code can
@@ -1853,29 +1584,29 @@ thaw arr = case bounds arr of
                | i <- [0 .. rangeSize (l,u) - 1]]
     return marr
 
+#ifdef __GLASGOW_HASKELL__
+thawSTUArray :: Ix i => UArray i e -> ST s (STUArray s i e)
+thawSTUArray (UArray l u arr#) = ST $ \s1# ->
+    case sizeofByteArray# arr#          of { n# ->
+    case newByteArray# n# s1#           of { (# s2#, marr# #) ->
+    case unsafeCoerce# memcpy marr# arr# n# s2# of { (# s3#, () #) ->
+    (# s3#, STUArray l u marr# #) }}}
 
+foreign import ccall unsafe "memcpy"
+    memcpy :: MutableByteArray# RealWorld -> ByteArray# -> Int# -> IO ()
 
+{-# RULES
+"thaw/STArray"  thaw = ArrST.thawSTArray
+"thaw/STUArray" thaw = thawSTUArray
+    #-}
+#endif /* __GLASGOW_HASKELL__ */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 thawSTUArray :: Ix i => UArray i e -> ST s (STUArray s i e)
 thawSTUArray (UArray l u arr) = do
     marr <- thawByteArray arr
     return (STUArray l u marr)
-
+#endif
 
 -- In-place conversion of immutable arrays to mutable ones places
 -- a proof obligation on the user: no other parts of your code can
@@ -1919,28 +1650,28 @@ thawSTUArray (UArray l u arr) = do
 unsafeThaw :: (Ix i, IArray a e, MArray b e m) => a i e -> m (b i e)
 unsafeThaw = thaw
 
+#ifdef __GLASGOW_HASKELL__
+{-# INLINE unsafeThawSTUArray #-}
+unsafeThawSTUArray :: Ix i => UArray i e -> ST s (STUArray s i e)
+unsafeThawSTUArray (UArray l u marr#) =
+    return (STUArray l u (unsafeCoerce# marr#))
 
-
-
-
-
-
-
-
-
-
-
+{-# RULES
+"unsafeThaw/STArray"    unsafeThaw = ArrST.unsafeThawSTArray
+"unsafeThaw/STUArray"   unsafeThaw = unsafeThawSTUArray
+    #-}
+#endif /* __GLASGOW_HASKELL__ */
 
 -- | Casts an 'STUArray' with one element type into one with a
 -- different element type.  All the elements of the resulting array
 -- are undefined (unless you know what you\'re doing...).
 
+#ifdef __GLASGOW_HASKELL__
+castSTUArray :: STUArray s ix a -> ST s (STUArray s ix b)
+castSTUArray (STUArray l u marr#) = return (STUArray l u marr#)
+#endif
 
-
-
-
-
-
+#ifdef __HUGS__
 castSTUArray :: STUArray s ix a -> ST s (STUArray s ix b)
 castSTUArray (STUArray l u marr) = return (STUArray l u marr)
-
+#endif

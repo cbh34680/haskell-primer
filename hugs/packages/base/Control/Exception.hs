@@ -38,9 +38,9 @@ module Control.Exception (
 	throwIO,	-- :: Exception -> IO a
 	throw,		-- :: Exception -> a
 	ioError,	-- :: IOError -> IO a
-
-
-
+#ifdef __GLASGOW_HASKELL__
+	throwTo,	-- :: ThreadId -> Exception -> a
+#endif
 
 	-- * Catching Exceptions
 
@@ -82,9 +82,9 @@ module Control.Exception (
 
 	-- $dynamic
 	throwDyn, 	-- :: Typeable ex => ex -> b
-
-
-
+#ifdef __GLASGOW_HASKELL__
+	throwDynTo, 	-- :: Typeable ex => ThreadId -> ex -> b
+#endif
 	catchDyn, 	-- :: Typeable ex => IO a -> (ex -> IO a) -> IO a
 	
 	-- * Asynchronous Exceptions
@@ -119,24 +119,24 @@ module Control.Exception (
 
 	finally, 	-- :: IO a -> IO b -> IO a
 	
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+	setUncaughtExceptionHandler,      -- :: (Exception -> IO ()) -> IO ()
+	getUncaughtExceptionHandler       -- :: IO (Exception -> IO ())
+#endif
   ) where
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base		( assert )
+import GHC.Exception 	as ExceptionBase hiding (catch)
+import GHC.Conc		( throwTo, ThreadId )
+import Data.IORef	( IORef, newIORef, readIORef, writeIORef )
+import Foreign.C.String ( CString, withCString )
+import System.IO	( stdout, hFlush )
+#endif
 
-
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Exception	as ExceptionBase
-
+#endif
 
 import Prelude 		hiding ( catch )
 import System.IO.Error	hiding ( catch, try )
@@ -291,12 +291,12 @@ tryJust p a = do
 throwDyn :: Typeable exception => exception -> b
 throwDyn exception = throw (DynException (toDyn exception))
 
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+-- | A variant of 'throwDyn' that throws the dynamic exception to an
+-- arbitrary thread (GHC only: c.f. 'throwTo').
+throwDynTo :: Typeable exception => ThreadId -> exception -> IO ()
+throwDynTo t exception = throwTo t (DynException (toDyn exception))
+#endif /* __GLASGOW_HASKELL__ */
 
 -- | Catch dynamic exceptions of the required type.  All other
 -- exceptions are re-thrown, including dynamic exceptions of the wrong
@@ -503,35 +503,35 @@ Similar arguments apply for other interruptible operations like
 'System.IO.openFile'.
 -}
 
-
+#ifndef __GLASGOW_HASKELL__
 assert :: Bool -> a -> a
 assert True x = x
 assert False _ = throw (AssertionFailed "")
+#endif
 
 
+#ifdef __GLASGOW_HASKELL__
+{-# NOINLINE uncaughtExceptionHandler #-}
+uncaughtExceptionHandler :: IORef (Exception -> IO ())
+uncaughtExceptionHandler = unsafePerformIO (newIORef defaultHandler)
+   where
+      defaultHandler :: Exception -> IO ()
+      defaultHandler ex = do
+         (hFlush stdout) `catchException` (\ _ -> return ())
+         let msg = case ex of
+               Deadlock    -> "no threads to run:  infinite loop or deadlock?"
+               ErrorCall s -> s
+               other       -> showsPrec 0 other "\n"
+         withCString "%s" $ \cfmt ->
+          withCString msg $ \cmsg ->
+            errorBelch cfmt cmsg
 
+foreign import ccall unsafe "RtsMessages.h errorBelch"
+   errorBelch :: CString -> CString -> IO ()
 
+setUncaughtExceptionHandler :: (Exception -> IO ()) -> IO ()
+setUncaughtExceptionHandler = writeIORef uncaughtExceptionHandler
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+getUncaughtExceptionHandler :: IO (Exception -> IO ())
+getUncaughtExceptionHandler = readIORef uncaughtExceptionHandler
+#endif

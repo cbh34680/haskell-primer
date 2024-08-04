@@ -19,19 +19,19 @@ module System.IO.Unsafe (
    unsafeInterleaveIO,	-- :: IO a -> IO a
   ) where
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.IOBase (unsafePerformIO, unsafeInterleaveIO)
+#endif
 
-
-
-
-
+#ifdef __HUGS__
 import Hugs.IOExts (unsafePerformIO, unsafeInterleaveIO)
+#endif
 
+#ifdef __NHC__
+import NHC.Internal (unsafePerformIO)
+#endif
 
-
-
-
-
-
-
-
-
+#if !__GLASGOW_HASKELL__ && !__HUGS__
+unsafeInterleaveIO :: IO a -> IO a
+unsafeInterleaveIO f = return (unsafePerformIO f)
+#endif

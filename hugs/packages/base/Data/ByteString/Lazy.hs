@@ -219,11 +219,11 @@ import Foreign.Storable
 -- Useful macros, until we have bang patterns
 --
 
-
-
-
-
-
+#define STRICT1(f) f a | a `seq` False = undefined
+#define STRICT2(f) f a b | a `seq` b `seq` False = undefined
+#define STRICT3(f) f a b c | a `seq` b `seq` c `seq` False = undefined
+#define STRICT4(f) f a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+#define STRICT5(f) f a b c d e | a `seq` b `seq` c `seq` d `seq` e `seq` False = undefined
 
 -- -----------------------------------------------------------------------------
 
@@ -1173,7 +1173,7 @@ hGetN :: Int -> Handle -> Int -> IO ByteString
 hGetN _ _ 0 = return empty
 hGetN k h n = readChunks n >>= return . LPS
   where
-    readChunks a | a `seq` False = undefined
+    STRICT1(readChunks)
     readChunks i = do
         ps <- P.hGet h (min k i)
         case P.length ps of
@@ -1185,20 +1185,20 @@ hGetN k h n = readChunks n >>= return . LPS
 -- waiting for data to become available, instead it returns only whatever data
 -- is available. Chunks are read on demand, in @k@-sized chunks.
 hGetNonBlockingN :: Int -> Handle -> Int -> IO ByteString
-
-
-
-
-
-
-
-
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+hGetNonBlockingN _ _ 0 = return empty
+hGetNonBlockingN k h n = readChunks n >>= return . LPS
+  where
+    STRICT1(readChunks)
+    readChunks i = do
+        ps <- P.hGetNonBlocking h (min k i)
+        case P.length ps of
+            0 -> return []
+            m -> do pss <- readChunks (i - m)
+                    return (ps : pss)
+#else
 hGetNonBlockingN = hGetN
-
+#endif
 
 -- | Read entire handle contents /lazily/ into a 'ByteString'. Chunks
 -- are read on demand, using the default chunk size.
@@ -1212,12 +1212,12 @@ hGet = hGetN defaultChunkSize
 -- | hGetNonBlocking is similar to 'hGet', except that it will never block
 -- waiting for data to become available, instead it returns only whatever data
 -- is available.
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+hGetNonBlocking :: Handle -> Int -> IO ByteString
+hGetNonBlocking = hGetNonBlockingN defaultChunkSize
+#else
 hGetNonBlocking = hGet
-
+#endif
 
 -- | Read an entire file /lazily/ into a 'ByteString'.
 readFile :: FilePath -> IO ByteString
@@ -1285,7 +1285,7 @@ filterMap f (x:xs) = case f x of
 findIndexOrEnd :: (Word8 -> Bool) -> P.ByteString -> Int
 findIndexOrEnd k (P.PS x s l) = P.inlinePerformIO $ withForeignPtr x $ \f -> go (f `plusPtr` s) 0
   where
-    go a b | a `seq` b `seq` False = undefined
+    STRICT2(go)
     go ptr n | n >= l    = return l
              | otherwise = do w <- peek ptr
                               if k w

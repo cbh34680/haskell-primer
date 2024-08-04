@@ -71,13 +71,13 @@ import Prelude
 
 import Data.Typeable
 
-
+#ifdef __HUGS__
 import Hugs.Weak
+#endif
 
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Weak
+#endif
 
 -- | A specialised version of 'mkWeak', where the key and the value are
 -- the same object:

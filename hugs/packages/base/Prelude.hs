@@ -35,16 +35,16 @@ module Prelude (
     -- *** Tuples
     fst, snd, curry, uncurry,
 
-
-
-
-
-
-
-
-
+#if defined(__NHC__)
+    []((:), []),	-- Not legal Haskell 98;
+			-- ... available through built-in syntax
+    module Data.Tuple,	-- Includes tuple types
+    ()(..),		-- Not legal Haskell 98
+    (->),		-- ... available through built-in syntax
+#endif
+#ifdef __HUGS__
     (:),		-- Not legal Haskell 98
-
+#endif
     
     -- ** Basic type classes
     Eq((==), (/=)),
@@ -143,52 +143,52 @@ module Prelude (
 
   ) where
 
+#ifndef __HUGS__
+import Control.Monad
+import System.IO
+import Text.Read
+import Text.Show
+import Data.List
+import Data.Either
+import Data.Maybe
+import Data.Bool
+import Data.Tuple
+import Data.Eq
+import Data.Ord
+#endif
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Base
+import GHC.IOBase
+import GHC.Exception
+import GHC.Read
+import GHC.Enum
+import GHC.Num
+import GHC.Real
+import GHC.Float
+import GHC.Show
+import GHC.Err   ( error, undefined )
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Prelude
+#endif
 
+#ifndef __HUGS__
+infixr 0 $!
 
+-- -----------------------------------------------------------------------------
+-- Miscellaneous functions
 
+-- | Strict (call-by-value) application, defined in terms of 'seq'.
+($!)    :: (a -> b) -> a -> b
+f $! x  = x `seq` f x
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __HADDOCK__
+-- | The value of @'seq' a b@ is bottom if @a@ is bottom, and otherwise
+-- equal to @b@.  'seq' is usually introduced to improve performance by
+-- avoiding unneeded laziness.
+seq :: a -> b -> b
+seq _ y = y
+#endif

@@ -37,13 +37,13 @@ module Distribution.Compat.FilePath
          , dllExtension
          ) where
 
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ && __GLASGOW_HASKELL__ < 604
+#if __GLASGOW_HASKELL__ < 603
+#include "config.h"
+#else
+#include "ghcconfig.h"
+#endif
+#endif
 
 import Data.List(intersperse)
 
@@ -75,20 +75,20 @@ import Data.List(intersperse)
 -- This is a special case because the \"\\\\\" path doesn\'t refer to
 -- an object (file or directory) which resides within a directory.
 splitFileName :: FilePath -> (String, String)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+splitFileName p = (reverse (path2++drive), reverse fname)
+  where
+    (path,drive) = case p of
+       (c:':':p) -> (reverse p,[':',c])
+       _         -> (reverse p,"")
+    (fname,path1) = break isPathSeparator path
+    path2 = case path1 of
+      []                           -> "."
+      [_]                          -> path1   -- don't remove the trailing slash if
+                                              -- there is only one character
+      (c:path) | isPathSeparator c -> path
+      _                            -> path1
+#else
 splitFileName p = (reverse path1, reverse fname1)
   where
     (fname,path) = break isPathSeparator (reverse p)
@@ -100,7 +100,7 @@ splitFileName p = (reverse path1, reverse fname1)
     fname1 = case fname of
       "" -> "."
       _  -> fname
-
+#endif
 
 -- | Split the path into file name and extension. If the file doesn\'t have extension,
 -- the function will return empty string. The extension doesn\'t include a leading period.
@@ -184,14 +184,14 @@ joinPaths :: FilePath -> FilePath -> FilePath
 joinPaths path1 path2
   | isRootedPath path2 = path2
   | otherwise          =
-
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+        case path2 of
+          d:':':path2' | take 2 path1 == [d,':'] -> path1 `joinFileName` path2'
+                       | otherwise               -> path2
+          _                                      -> path1 `joinFileName` path2
+#else
         path1 `joinFileName` path2
-
+#endif
 
 -- | Changes the extension of a file path.
 changeFileExt :: FilePath           -- ^ The path information to modify.
@@ -209,19 +209,19 @@ changeFileExt path ext = joinFileExt name ext
 -- the drive letter and the full file path.
 isRootedPath :: FilePath -> Bool
 isRootedPath (c:_) | isPathSeparator c = True
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+isRootedPath (_:':':c:_) | isPathSeparator c = True  -- path with drive letter
+#endif
 isRootedPath _ = False
 
 -- | Returns 'True' if this path\'s meaning is independent of any OS
 -- \"working directory\", or 'False' if it isn\'t.
 isAbsolutePath :: FilePath -> Bool
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+isAbsolutePath (_:':':c:_) | isPathSeparator c = True
+#else
 isAbsolutePath (c:_)       | isPathSeparator c = True
-
+#endif
 isAbsolutePath _ = False
 
 -- | If the function is applied to an absolute path then it returns a local path droping
@@ -229,10 +229,10 @@ isAbsolutePath _ = False
 -- Unix the prefix is always \"\/\".
 dropAbsolutePrefix :: FilePath -> FilePath
 dropAbsolutePrefix (c:cs) | isPathSeparator c = cs
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+dropAbsolutePrefix (_:':':c:cs) | isPathSeparator c = cs  -- path with drive letter
+dropAbsolutePrefix (_:':':cs)                       = cs
+#endif
 dropAbsolutePrefix cs = cs
 
 -- | Split the path into a list of strings constituting the filepath
@@ -285,13 +285,13 @@ pathParents :: FilePath -> [FilePath]
 pathParents p =
     root'' : map ((++) root') (dropEmptyPath $ inits path')
     where
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+       (root,path) = case break (== ':') p of
+          (path,    "") -> ("",path)
+          (root,_:path) -> (root++":",path)
+#else
        (root,path) = ("",p)
-
+#endif
        (root',root'',path') = case path of
          (c:path) | isPathSeparator c -> (root++[pathSeparator],root++[pathSeparator],path)
          _                            -> (root                 ,root++"."            ,path)
@@ -316,20 +316,20 @@ commonParent :: [FilePath] -> Maybe FilePath
 commonParent []           = Nothing
 commonParent paths@(p:ps) =
   case common Nothing "" p ps of
-
-
-
-
-
-
-
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+    Nothing | all (not . isAbsolutePath) paths ->
+      let
+         getDrive (d:':':_) ds
+           | not (d `elem` ds) = d:ds
+         getDrive _         ds = ds
+      in
+      case foldr getDrive [] paths of
+        []  -> Just "."
+        [d] -> Just [d,':']
+        _   -> Nothing
+#else
     Nothing | all (not . isAbsolutePath) paths -> Just "."
-
+#endif
     mb_path   -> mb_path
   where
     common i acc []     ps = checkSep   i acc         ps
@@ -373,9 +373,9 @@ parseSearchPath path = split path
       where
         chunk =
           case chunk' of
-
-
-
+#ifdef mingw32_HOST_OS
+            ('\"':xs@(_:_)) | last xs == '\"' -> init xs
+#endif
             _                                 -> chunk'
 
         (chunk', rest') = break (==searchPathSeparator) s
@@ -396,52 +396,52 @@ mkSearchPath paths = concat (intersperse [searchPathSeparator] paths)
 -- checks for it on this platform, too.
 isPathSeparator :: Char -> Bool
 isPathSeparator ch =
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+  ch == '/' || ch == '\\'
+#else
   ch == '/'
-
+#endif
 
 -- | Provides a platform-specific character used to separate directory levels in
 -- a path string that reflects a hierarchical file system organization. The
 -- separator is a slash (@\"\/\"@) on Unix and Macintosh, and a backslash
 -- (@\"\\\"@) on the Windows operating system.
 pathSeparator :: Char
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+pathSeparator = '\\'
+#else
 pathSeparator = '/'
-
+#endif
 
 -- | A platform-specific character used to separate search path strings in
 -- environment variables. The separator is a colon (\":\") on Unix and Macintosh,
 -- and a semicolon (\";\") on the Windows operating system.
 searchPathSeparator :: Char
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+searchPathSeparator = ';'
+#else
 searchPathSeparator = ':'
-
+#endif
 
 -- |Convert Unix-style path separators to the path separators for this platform.
 platformPath :: FilePath -> FilePath
-
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+platformPath = map slash
+  where slash '/' = '\\'
+        slash c = c
+#else
 platformPath = id
-
+#endif
 
 -- ToDo: This should be determined via autoconf (AC_EXEEXT)
 -- | Extension for executable files
 -- (typically @\"\"@ on Unix and @\"exe\"@ on Windows or OS\/2)
 exeExtension :: String
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+exeExtension = "exe"
+#else
 exeExtension = ""
-
+#endif
 
 -- ToDo: This should be determined via autoconf (AC_OBJEXT)
 -- | Extension for object files. For GHC and NHC the extension is @\"o\"@.
@@ -452,8 +452,8 @@ objExtension = "o"
 -- | Extension for dynamically linked (or shared) libraries
 -- (typically @\"so\"@ on Unix and @\"dll\"@ on Windows)
 dllExtension :: String
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+dllExtension = "dll"
+#else
 dllExtension = "so"
-
+#endif

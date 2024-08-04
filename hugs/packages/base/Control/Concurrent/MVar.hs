@@ -28,22 +28,22 @@ module Control.Concurrent.MVar
 	, withMVar	-- :: MVar a -> (a -> IO b) -> IO b
 	, modifyMVar_ 	-- :: MVar a -> (a -> IO a) -> IO ()
 	, modifyMVar 	-- :: MVar a -> (a -> IO (a,b)) -> IO b
-
-
-
+#ifndef __HUGS__
+	, addMVarFinalizer -- :: MVar a -> IO () -> IO ()
+#endif
     ) where
 
-
+#ifdef __HUGS__
 import Hugs.ConcBase ( MVar, newEmptyMVar, newMVar, takeMVar, putMVar,
 		  tryTakeMVar, tryPutMVar, isEmptyMVar,
 		)
+#endif
 
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Conc	( MVar, newEmptyMVar, newMVar, takeMVar, putMVar,
+		  tryTakeMVar, tryPutMVar, isEmptyMVar, addMVarFinalizer
+		)
+#endif
 
 import Prelude
 import Control.Exception as Exception

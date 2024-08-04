@@ -41,12 +41,12 @@ module Data.ByteString.Base (
         fromForeignPtr,         -- :: ForeignPtr Word8 -> Int -> ByteString
         toForeignPtr,           -- :: ByteString -> (ForeignPtr Word8, Int, Int)
 
-
-
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+        packCStringFinalizer,   -- :: Ptr Word8 -> Int -> IO () -> IO ByteString
+        packAddress,            -- :: Addr# -> ByteString
+        unsafePackAddress,      -- :: Int -> Addr# -> ByteString
+        unsafeFinalize,         -- :: ByteString -> IO ()
+#endif
 
         -- * Utilities
         inlinePerformIO,            -- :: IO a -> a
@@ -74,9 +74,9 @@ module Data.ByteString.Base (
         c_count,                    -- :: Ptr Word8 -> CInt -> Word8 -> IO CInt
 
         -- * Internal GHC magic
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+        memcpy_ptr_baoff,           -- :: Ptr a -> RawBuffer -> CInt -> CSize -> IO (Ptr ())
+#endif
 
         -- * Chars
         w2c, c2w, isSpaceWord8
@@ -94,32 +94,32 @@ import Control.Exception        (assert)
 import Data.Char                (ord)
 import Data.Word                (Word8)
 
+#if defined(__GLASGOW_HASKELL__)
+import qualified Foreign.ForeignPtr as FC (finalizeForeignPtr)
+import qualified Foreign.Concurrent as FC (newForeignPtr)
 
-
-
-
-
-
-
-
-
-
+import Data.Generics            (Data(..), Typeable(..))
+import GHC.Prim                 (Addr#)
+import GHC.Ptr                  (Ptr(..))
+import GHC.Base                 (realWorld#,unsafeChr)
+import GHC.IOBase               (IO(IO), unsafePerformIO, RawBuffer)
+#else
 import Data.Char                (chr)
 import System.IO.Unsafe         (unsafePerformIO)
+#endif
 
-
-
-
-
+#if __GLASGOW_HASKELL__ >= 605 && !defined(SLOW_FOREIGN_PTR)
+import GHC.ForeignPtr           (mallocPlainForeignPtrBytes)
+#else
 import Foreign.ForeignPtr       (mallocForeignPtrBytes)
+#endif
 
-
-
-
-
-
+#if __GLASGOW_HASKELL__>=605
+import GHC.ForeignPtr           (ForeignPtr(ForeignPtr))
+import GHC.Base                 (nullAddr#)
+#else
 import Foreign.Ptr              (nullPtr)
-
+#endif
 
 -- CFILES stuff is Hugs only
 {-# CFILES cbits/fpstring.c #-}
@@ -129,11 +129,11 @@ import Foreign.Ptr              (nullPtr)
 -- Useful macros, until we have bang patterns
 --
 
-
-
-
-
-
+#define STRICT1(f) f a | a `seq` False = undefined
+#define STRICT2(f) f a b | a `seq` b `seq` False = undefined
+#define STRICT3(f) f a b c | a `seq` b `seq` c `seq` False = undefined
+#define STRICT4(f) f a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+#define STRICT5(f) f a b c d e | a `seq` b `seq` c `seq` d `seq` e `seq` False = undefined
 
 -- -----------------------------------------------------------------------------
 
@@ -146,9 +146,9 @@ data ByteString = PS {-# UNPACK #-} !(ForeignPtr Word8)
                      {-# UNPACK #-} !Int                -- offset
                      {-# UNPACK #-} !Int                -- length
 
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+    deriving (Data, Typeable)
+#endif
 
 instance Show ByteString where
     showsPrec p ps r = showsPrec p (unpackWith w2c ps) r
@@ -162,7 +162,7 @@ unpackWith _ (PS _  _ 0) = []
 unpackWith k (PS ps s l) = inlinePerformIO $ withForeignPtr ps $ \p ->
         go (p `plusPtr` s) (l - 1) []
     where
-        go a b c | a `seq` b `seq` c `seq` False = undefined
+        STRICT3(go)
         go p 0 acc = peek p          >>= \e -> return (k e : acc)
         go p n acc = peekByteOff p n >>= \e -> go p (n-1) (k e : acc)
 {-# INLINE unpackWith #-}
@@ -173,7 +173,7 @@ unpackWith k (PS ps s l) = inlinePerformIO $ withForeignPtr ps $ \p ->
 packWith :: (a -> Word8) -> [a] -> ByteString
 packWith k str = unsafeCreate (length str) $ \p -> go p str
     where
-        go a b | a `seq` b `seq` False = undefined
+        STRICT2(go)
         go _ []     = return ()
         go p (x:xs) = poke p (k x) >> go (p `plusPtr` 1) xs -- less space than pokeElemOff
 {-# INLINE packWith #-}
@@ -188,9 +188,9 @@ packWith k str = unsafeCreate (length str) $ \p -> go p str
 --
 newtype LazyByteString = LPS [ByteString] -- LPS for lazy packed string
     deriving (Show,Read
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+                        ,Data, Typeable
+#endif
              )
 
 ------------------------------------------------------------------------
@@ -200,12 +200,12 @@ empty :: ByteString
 empty = PS nullForeignPtr 0 0
 
 nullForeignPtr :: ForeignPtr Word8
-
-
-
+#if __GLASGOW_HASKELL__>=605
+nullForeignPtr = ForeignPtr nullAddr# undefined --TODO: should ForeignPtrContents be strict?
+#else
 nullForeignPtr = unsafePerformIO $ newForeignPtr_ nullPtr
 {-# NOINLINE nullForeignPtr #-}
-
+#endif
 
 -- ---------------------------------------------------------------------
 --
@@ -306,77 +306,77 @@ createAndTrim' l f = do
 -- for GHC 6.5 builds newer than 06/06/06
 mallocByteString :: Int -> IO (ForeignPtr a)
 mallocByteString l = do
-
-
-
+#if __GLASGOW_HASKELL__ >= 605 && !defined(SLOW_FOREIGN_PTR)
+    mallocPlainForeignPtrBytes l
+#else
     mallocForeignPtrBytes l
+#endif
 
+#if defined(__GLASGOW_HASKELL__)
+-- | /O(n)/ Pack a null-terminated sequence of bytes, pointed to by an
+-- Addr\# (an arbitrary machine address assumed to point outside the
+-- garbage-collected heap) into a @ByteString@. A much faster way to
+-- create an Addr\# is with an unboxed string literal, than to pack a
+-- boxed string. A unboxed string literal is compiled to a static @char
+-- []@ by GHC. Establishing the length of the string requires a call to
+-- @strlen(3)@, so the Addr# must point to a null-terminated buffer (as
+-- is the case with "string"# literals in GHC). Use 'unsafePackAddress'
+-- if you know the length of the string statically.
+--
+-- An example:
+--
+-- > literalFS = packAddress "literal"#
+--
+packAddress :: Addr# -> ByteString
+packAddress addr# = inlinePerformIO $ do
+    p <- newForeignPtr_ cstr
+    l <- c_strlen cstr
+    return $ PS p 0 (fromIntegral l)
+  where
+    cstr = Ptr addr#
+{-# INLINE packAddress #-}
 
+-- | /O(1)/ 'unsafePackAddress' provides constant-time construction of
+-- 'ByteStrings' -- which is ideal for string literals. It packs a
+-- null-terminated sequence of bytes into a 'ByteString', given a raw
+-- 'Addr\#' to the string, and the length of the string. Make sure the
+-- length is correct, otherwise use the safer 'packAddress' (where the
+-- length will be calculated once at runtime).
+unsafePackAddress :: Int -> Addr# -> ByteString
+unsafePackAddress len addr# = inlinePerformIO $ do
+    p <- newForeignPtr_ cstr
+    return $ PS p 0 len
+    where cstr = Ptr addr#
 
+-- | /O(1)/ Construct a 'ByteString' given a C Ptr Word8 buffer, a
+-- length, and an IO action representing a finalizer. This function is
+-- not available on Hugs.
+--
+packCStringFinalizer :: Ptr Word8 -> Int -> IO () -> IO ByteString
+packCStringFinalizer p l f = do
+    fp <- FC.newForeignPtr p f
+    return $ PS fp 0 l
 
+-- | Explicitly run the finaliser associated with a 'ByteString'.
+-- Further references to this value may generate invalid memory
+-- references. This operation is unsafe, as there may be other
+-- 'ByteStrings' referring to the same underlying pages. If you use
+-- this, you need to have a proof of some kind that all 'ByteString's
+-- ever generated from the underlying byte array are no longer live.
+unsafeFinalize :: ByteString -> IO ()
+unsafeFinalize (PS p _ _) = FC.finalizeForeignPtr p
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 ------------------------------------------------------------------------
 
 -- | Conversion between 'Word8' and 'Char'. Should compile to a no-op.
 w2c :: Word8 -> Char
-
+#if !defined(__GLASGOW_HASKELL__)
 w2c = chr . fromIntegral
-
-
-
+#else
+w2c = unsafeChr . fromIntegral
+#endif
 {-# INLINE w2c #-}
 
 -- | Unsafe conversion between 'Char' and 'Word8'. This is a no-op and
@@ -407,20 +407,20 @@ isSpaceWord8 w = case w of
 --
 {-# INLINE inlinePerformIO #-}
 inlinePerformIO :: IO a -> a
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+inlinePerformIO (IO m) = case m realWorld# of (# _, r #) -> r
+#else
 inlinePerformIO = unsafePerformIO
-
+#endif
 
 -- | Count the number of occurrences of each byte.
 --
 {-# SPECIALIZE countOccurrences :: Ptr CSize -> Ptr Word8 -> Int -> IO () #-}
 countOccurrences :: (Storable a, Num a) => Ptr a -> Ptr Word8 -> Int -> IO ()
-countOccurrences a b c | a `seq` b `seq` c `seq` False = undefined
+STRICT3(countOccurrences)
 countOccurrences counts str l = go 0
  where
-    go a | a `seq` False = undefined
+    STRICT1(go)
     go i | i == l    = return ()
          | otherwise = do k <- fromIntegral `fmap` peekElemOff str i
                           x <- peekElemOff counts k
@@ -513,7 +513,7 @@ foreign import ccall unsafe "static sys/mman.h munmap" c_munmap
 -- ---------------------------------------------------------------------
 -- Internal GHC Haskell magic
 
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+foreign import ccall unsafe "__hscore_memcpy_src_off"
+   memcpy_ptr_baoff :: Ptr a -> RawBuffer -> CInt -> CSize -> IO (Ptr ())
+#endif

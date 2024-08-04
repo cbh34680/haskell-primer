@@ -28,25 +28,25 @@ module Foreign.StablePtr
 	  -- $cinterface
         ) where
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Stable
+import GHC.Err
+#endif
 
-
-
-
-
-
+#ifdef __HUGS__
 import Hugs.StablePtr
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __NHC__
+import NHC.FFI
+  ( StablePtr
+  , newStablePtr
+  , deRefStablePtr
+  , freeStablePtr
+  , castStablePtrToPtr
+  , castPtrToStablePtr
+  )
+#endif
 
 -- $cinterface
 --

@@ -70,18 +70,18 @@ module Distribution.Simple.Utils (
         distPref,
         haddockPref,
         srcPref,
-
-
-
+#ifdef DEBUG
+        hunitTests
+#endif
   ) where
 
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ && __GLASGOW_HASKELL__ < 604
+#if __GLASGOW_HASKELL__ < 603
+#include "config.h"
+#else
+#include "ghcconfig.h"
+#endif
+#endif
 
 import Distribution.Compat.RawSystem (rawSystem)
 import Distribution.Compat.Exception (finally)
@@ -92,9 +92,9 @@ import System.Environment (getProgName)
 import System.IO (hPutStrLn, stderr, hFlush, stdout)
 import System.IO.Error
 import System.Exit
-
+#if (__GLASGOW_HASKELL__ || __HUGS__) && !(mingw32_HOST_OS || mingw32_TARGET_OS)
 import System.Posix.Internals (c_getpid)
-
+#endif
 
 import Distribution.Compat.FilePath
 	(splitFileName, splitFileExt, joinFileName, joinFileExt, joinPaths,
@@ -107,9 +107,9 @@ import Distribution.Compat.Directory
            (copyFile, findExecutable, createDirectoryIfMissing,
             getDirectoryContentsWithoutSpecial)
 
-
-
-
+#ifdef DEBUG
+import HUnit ((~:), (~=?), Test(..), assertEqual)
+#endif
 
 -- ------------------------------------------------------------------------------- Utils for setup
 
@@ -375,16 +375,16 @@ withTempFile tmp_dir extn action
 	   if b then findTempName (x+1)
 		else action path `finally` try (removeFile path)
 
-
-
-
-
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+foreign import ccall unsafe "_getpid" getProcessID :: IO Int
+		 -- relies on Int == Int32 on Windows
+#elif __GLASGOW_HASKELL__ || __HUGS__
 getProcessID :: IO Int
 getProcessID = System.Posix.Internals.c_getpid >>= return . fromIntegral
-
-
-
-
+#else
+-- error ToDo: getProcessID
+foreign import ccall unsafe "getpid" getProcessID :: IO Int
+#endif
 
 -- ------------------------------------------------------------
 -- * Finding the description file
@@ -465,53 +465,53 @@ findHookedPackageDesc dir = do
 -- * Testing
 -- ------------------------------------------------------------
 
+#ifdef DEBUG
+hunitTests :: [Test]
+hunitTests
+    = let suffixes = ["hs", "lhs"]
+          in [TestCase $
+#if mingw32_HOST_OS || mingw32_TARGET_OS
+       do mp1 <- moduleToFilePath [""] "Distribution.Simple.Build" suffixes --exists
+          mp2 <- moduleToFilePath [""] "Foo.Bar" suffixes    -- doesn't exist
+          assertEqual "existing not found failed"
+                   ["Distribution\\Simple\\Build.hs"] mp1
+          assertEqual "not existing not nothing failed" [] mp2,
 
+        "moduleToPossiblePaths 1" ~: "failed" ~:
+             ["Foo\\Bar\\Bang.hs","Foo\\Bar\\Bang.lhs"]
+                ~=? (moduleToPossiblePaths "" "Foo.Bar.Bang" suffixes),
+        "moduleToPossiblePaths2 " ~: "failed" ~:
+              (moduleToPossiblePaths "" "Foo" suffixes) ~=? ["Foo.hs", "Foo.lhs"],
+        TestCase (do files <- filesWithExtensions "." "cabal"
+                     assertEqual "filesWithExtensions" "Cabal.cabal" (head files))
+#else
+       do mp1 <- moduleToFilePath [""] "Distribution.Simple.Build" suffixes --exists
+          mp2 <- moduleToFilePath [""] "Foo.Bar" suffixes    -- doesn't exist
+          assertEqual "existing not found failed"
+                   ["Distribution/Simple/Build.hs"] mp1
+          assertEqual "not existing not nothing failed" [] mp2,
 
+        "moduleToPossiblePaths 1" ~: "failed" ~:
+             ["Foo/Bar/Bang.hs","Foo/Bar/Bang.lhs"]
+                ~=? (moduleToPossiblePaths "" "Foo.Bar.Bang" suffixes),
+        "moduleToPossiblePaths2 " ~: "failed" ~:
+              (moduleToPossiblePaths "" "Foo" suffixes) ~=? ["Foo.hs", "Foo.lhs"],
 
+        TestCase (do files <- filesWithExtensions "." "cabal"
+                     assertEqual "filesWithExtensions" "Cabal.cabal" (head files))
+#endif
+          ]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- |Might want to make this more generic some day, with regexps
+-- or something.
+filesWithExtensions :: FilePath -- ^Directory to look in
+                    -> String   -- ^The extension
+                    -> IO [FilePath] {- ^The file names (not full
+                                     path) of all the files with this
+                                     extension in this directory. -}
+filesWithExtensions dir extension 
+    = do allFiles <- getDirectoryContents dir
+         return $ filter hasExt allFiles
+    where
+      hasExt f = snd (splitFileExt f) == extension
+#endif

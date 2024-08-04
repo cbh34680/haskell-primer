@@ -82,15 +82,15 @@ import System.Directory		( removeFile, renameFile,
 				  getDirectoryContents, doesFileExist )
 import System.Exit              (ExitCode(..))
 
+#ifdef mingw32_HOST_OS
+import Distribution.Compat.FilePath ( splitFileName )
+#endif
 
-
-
-
-
+#ifndef __NHC__
 import Control.Exception (try)
-
-
-
+#else
+import IO (try)
+#endif
 
 -- -----------------------------------------------------------------------------
 -- Building
@@ -205,18 +205,18 @@ build pkg_descr lbi verbose = do
                 ++ map (pref `joinFileName`) cObjs
 		++ stubObjs
 
-
-
-
-
-
-
-
+#if defined(mingw32_TARGET_OS) || defined(mingw32_HOST_OS)
+            (compilerDir, _) = splitFileName $ compilerPath (compiler lbi)
+            (baseDir, _)     = splitFileName compilerDir
+            ld = baseDir `joinFileName` "gcc-lib\\ld.exe"
+            rawSystemLd = rawSystemVerbose
+            maxCommandLineSize = 30 * 1024
+#else
             ld = "ld"
             rawSystemLd = rawSystemPath
              --TODO: discover this at configure time on unix
             maxCommandLineSize = 30 * 1024
-
+#endif
             runLd ld args = do
               exists <- doesFileExist ghciLibName
               status <- rawSystemLd verbose ld

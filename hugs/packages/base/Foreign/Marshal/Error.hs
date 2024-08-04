@@ -30,15 +30,15 @@ module Foreign.Marshal.Error (
 
 import Foreign.Ptr
 
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+#ifdef __HADDOCK__
+import Data.Bool
+import System.IO.Error
+#endif
+import GHC.Base
+import GHC.Num
+import GHC.IOBase
+#endif
 
 -- exported functions
 -- ------------------

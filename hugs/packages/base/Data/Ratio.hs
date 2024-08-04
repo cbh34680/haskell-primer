@@ -35,17 +35,17 @@ module Data.Ratio
 
 import Prelude
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Real		-- The basic defns for Ratio
+#endif
 
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Prelude(Ratio(..), (%), numerator, denominator)
+#endif
 
-
-
-
-
+#ifdef __NHC__
+import Ratio (Ratio(..), (%), numerator, denominator, approxRational)
+#else
 
 -- -----------------------------------------------------------------------------
 -- approxRational
@@ -91,4 +91,4 @@ approxRational rat eps	=  simplest (rat-eps) (rat+eps)
 					   nd''       =  simplest' d' r' d r
 					   n''        =  numerator nd''
 					   d''        =	 denominator nd''
-
+#endif

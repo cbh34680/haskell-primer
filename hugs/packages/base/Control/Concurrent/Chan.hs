@@ -36,62 +36,7 @@ import System.IO.Unsafe		( unsafeInterleaveIO )
 import Control.Concurrent.MVar
 import Data.Typeable
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#include "Typeable.h"
 
 -- A channel is represented by two @MVar@s keeping track of the two ends
 -- of the channel contents,i.e.,  the read- and write ends. Empty @MVar@s
@@ -102,7 +47,7 @@ data Chan a
  = Chan (MVar (Stream a))
         (MVar (Stream a))
 
-chanTc = mkTyCon "Chan"; instance Typeable1 Chan where { typeOf1 _ = mkTyConApp chanTc [] }; instance Typeable a => Typeable (Chan a) where { typeOf = typeOfDefault }
+INSTANCE_TYPEABLE1(Chan,chanTc,"Chan")
 
 type Stream a = MVar (ChItem a)
 

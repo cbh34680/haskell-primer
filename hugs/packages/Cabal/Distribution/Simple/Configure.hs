@@ -50,19 +50,19 @@ module Distribution.Simple.Configure (writePersistBuildConfig,
                                       getInstalledPackages,
 				      configDependency,
                                       configCompiler, configCompilerAux,
-
-
-
+#ifdef DEBUG
+                                      hunitTests
+#endif
                                      )
     where
 
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ && __GLASGOW_HASKELL__ < 604
+#if __GLASGOW_HASKELL__ < 603
+#include "config.h"
+#else
+#include "ghcconfig.h"
+#endif
+#endif
 
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Simple.Register (removeInstalledConfig)
@@ -95,13 +95,13 @@ import Distribution.Compat.Directory (findExecutable)
 import Data.Char (isDigit)
 import Prelude hiding (catch)
 
+#ifdef mingw32_HOST_OS
+import Distribution.PackageDescription (hasLibs)
+#endif
 
-
-
-
-
-
-
+#ifdef DEBUG
+import HUnit
+#endif
 
 tryGetPersistBuildConfig :: IO (Either String LocalBuildInfo)
 tryGetPersistBuildConfig = do
@@ -253,15 +253,15 @@ messageDir :: PackageDescription -> LocalBuildInfo -> String
 messageDir pkg_descr lbi name mkDir mkDirRel = 
   message (name ++ " installed in: " ++ mkDir pkg_descr lbi NoCopyDest ++ rel_note)
   where
-
-
-
-
-
-
-
+#if mingw32_HOST_OS
+    rel_note
+      | not (hasLibs pkg_descr) &&
+        mkDirRel pkg_descr lbi NoCopyDest == Nothing
+                  = "  (fixed location)"
+      | otherwise = ""
+#else
     rel_note      = ""
-
+#endif
 
 -- |Converts build dependencies to a versioned dependency.  only sets
 -- version information for exact versioned dependencies.
@@ -450,23 +450,23 @@ message s = putStrLn $ "configure: " ++ s
 -- -----------------------------------------------------------------------------
 -- Tests
 
+#ifdef DEBUG
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+hunitTests :: [Test]
+hunitTests = []
+{- Too specific:
+packageID = PackageIdentifier "Foo" (Version [1] [])
+    = [TestCase $
+       do let simonMarGHCLoc = "/usr/bin/ghc"
+          simonMarGHC <- configure emptyPackageDescription {package=packageID}
+                                       (Just GHC,
+				       Just simonMarGHCLoc,
+				       Nothing, Nothing)
+	  assertEqual "finding ghc, etc on simonMar's machine failed"
+             (LocalBuildInfo "/usr" (Compiler GHC 
+	                    (Version [6,2,2] []) simonMarGHCLoc 
+ 			    (simonMarGHCLoc ++ "-pkg")) [] [])
+             simonMarGHC
+      ]
+-}
+#endif

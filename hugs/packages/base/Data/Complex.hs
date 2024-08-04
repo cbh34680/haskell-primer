@@ -45,9 +45,9 @@ import Prelude
 
 import Data.Typeable
 
-
+#ifdef __HUGS__
 import Hugs.Prelude(Num(fromInt), Fractional(fromDouble))
-
+#endif
 
 infix  6  :+
 
@@ -118,63 +118,8 @@ phase (x:+y)	 = atan2 y x
 -- -----------------------------------------------------------------------------
 -- Instances of Complex
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-complexTc = mkTyCon "Complex"; instance Typeable1 Complex where { typeOf1 _ = mkTyConApp complexTc [] }; instance Typeable a => Typeable (Complex a) where { typeOf = typeOfDefault }
+#include "Typeable.h"
+INSTANCE_TYPEABLE1(Complex,complexTc,"Complex")
 
 instance  (RealFloat a) => Num (Complex a)  where
     {-# SPECIALISE instance Num (Complex Float) #-}
@@ -187,9 +132,9 @@ instance  (RealFloat a) => Num (Complex a)  where
     signum 0		=  0
     signum z@(x:+y)	=  x/r :+ y/r  where r = magnitude z
     fromInteger n	=  fromInteger n :+ 0
-
+#ifdef __HUGS__
     fromInt n		=  fromInt n :+ 0
-
+#endif
 
 instance  (RealFloat a) => Fractional (Complex a)  where
     {-# SPECIALISE instance Fractional (Complex Float) #-}
@@ -201,9 +146,9 @@ instance  (RealFloat a) => Fractional (Complex a)  where
 				 d   = x'*x'' + y'*y''
 
     fromRational a	=  fromRational a :+ 0
-
+#ifdef __HUGS__
     fromDouble a	=  fromDouble a :+ 0
-
+#endif
 
 instance  (RealFloat a) => Floating (Complex a)	where
     {-# SPECIALISE instance Floating (Complex Float) #-}

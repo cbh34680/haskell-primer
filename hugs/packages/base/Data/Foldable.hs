@@ -65,13 +65,13 @@ import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid
 import Data.Array
 
+#ifdef __NHC__
+import Control.Arrow (ArrowZero(..)) -- work around nhc98 typechecker problem
+#endif
 
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Exts (build)
+#endif
 
 -- | Data structures that can be folded.
 --
@@ -219,11 +219,11 @@ msum = foldr mplus mzero
 
 -- | List of elements of a structure.
 toList :: Foldable t => t a -> [a]
-
-
-
+#ifdef __GLASGOW_HASKELL__
+toList t = build (\ c n -> foldr c n t)
+#else
 toList = foldr (:) []
-
+#endif
 
 -- | The concatenation of all the elements of a container of lists.
 concat :: Foldable t => t [a] -> [a]

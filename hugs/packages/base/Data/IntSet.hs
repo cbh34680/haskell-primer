@@ -106,21 +106,21 @@ import List (nub,sort)
 import qualified List
 -}
 
+#if __GLASGOW_HASKELL__
+import Text.Read
+import Data.Generics.Basics
+import Data.Generics.Instances
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__ >= 503
+import GHC.Word
+import GHC.Exts ( Word(..), Int(..), shiftRL# )
+#elif __GLASGOW_HASKELL__
+import Word
+import GlaExts ( Word(..), Int(..), shiftRL# )
+#else
 import Data.Word
-
+#endif
 
 infixl 9 \\{-This comment teaches CPP correct behaviour -}
 
@@ -134,15 +134,15 @@ intFromNat :: Nat -> Int
 intFromNat w = fromIntegral w
 
 shiftRL :: Nat -> Int -> Nat
-
-
-
-
-
-
-
+#if __GLASGOW_HASKELL__
+{--------------------------------------------------------------------
+  GHC: use unboxing to get @shiftRL@ inlined.
+--------------------------------------------------------------------}
+shiftRL (W# x) (I# i)
+  = W# (shiftRL# x i)
+#else
 shiftRL x i   = shiftR x i
-
+#endif
 
 {--------------------------------------------------------------------
   Operators
@@ -167,22 +167,22 @@ instance Monoid IntSet where
     mappend = union
     mconcat = unions
 
+#if __GLASGOW_HASKELL__
 
+{--------------------------------------------------------------------
+  A Data instance  
+--------------------------------------------------------------------}
 
+-- This instance preserves data abstraction at the cost of inefficiency.
+-- We omit reflection services for the sake of data abstraction.
 
+instance Data IntSet where
+  gfoldl f z is = z fromList `f` (toList is)
+  toConstr _    = error "toConstr"
+  gunfold _ _   = error "gunfold"
+  dataTypeOf _  = mkNorepType "Data.IntSet.IntSet"
 
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 {--------------------------------------------------------------------
   Query
@@ -646,81 +646,26 @@ showSet (x:xs)
   Read
 --------------------------------------------------------------------}
 instance Read IntSet where
+#ifdef __GLASGOW_HASKELL__
+  readPrec = parens $ prec 10 $ do
+    Ident "fromList" <- lexP
+    xs <- readPrec
+    return (fromList xs)
 
-
-
-
-
-
-
-
+  readListPrec = readListPrecDefault
+#else
   readsPrec p = readParen (p > 10) $ \ r -> do
     ("fromList",s) <- lex r
     (xs,t) <- reads s
     return (fromList xs,t)
-
+#endif
 
 {--------------------------------------------------------------------
   Typeable
 --------------------------------------------------------------------}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-intSetTc = mkTyCon "IntSet"; instance Typeable IntSet where { typeOf _ = mkTyConApp intSetTc [] }
+#include "Typeable.h"
+INSTANCE_TYPEABLE0(IntSet,intSetTc,"IntSet")
 
 {--------------------------------------------------------------------
   Debugging

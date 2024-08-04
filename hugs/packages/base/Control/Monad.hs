@@ -71,47 +71,47 @@ module Control.Monad
 
 import Data.Maybe
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.List
+import GHC.Base
+#endif
 
+#ifdef __GLASGOW_HASKELL__
+infixr 1 =<<
 
+-- -----------------------------------------------------------------------------
+-- Prelude monad functions
 
+-- | Same as '>>=', but with the arguments interchanged.
+{-# SPECIALISE (=<<) :: (a -> [b]) -> [a] -> [b] #-}
+(=<<)           :: Monad m => (a -> m b) -> m a -> m b
+f =<< x		= x >>= f
 
+-- | Evaluate each action in the sequence from left to right,
+-- and collect the results.
+sequence       :: Monad m => [m a] -> m [a] 
+{-# INLINE sequence #-}
+sequence ms = foldr k (return []) ms
+	    where
+	      k m m' = do { x <- m; xs <- m'; return (x:xs) }
 
+-- | Evaluate each action in the sequence from left to right,
+-- and ignore the results.
+sequence_        :: Monad m => [m a] -> m () 
+{-# INLINE sequence_ #-}
+sequence_ ms     =  foldr (>>) (return ()) ms
 
+-- | @'mapM' f@ is equivalent to @'sequence' . 'map' f@.
+mapM            :: Monad m => (a -> m b) -> [a] -> m [b]
+{-# INLINE mapM #-}
+mapM f as       =  sequence (map f as)
 
+-- | @'mapM_' f@ is equivalent to @'sequence_' . 'map' f@.
+mapM_           :: Monad m => (a -> m b) -> [a] -> m ()
+{-# INLINE mapM_ #-}
+mapM_ f as      =  sequence_ (map f as)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif  /* __GLASGOW_HASKELL__ */
 
 -- -----------------------------------------------------------------------------
 -- The MonadPlus class definition

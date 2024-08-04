@@ -15,10 +15,10 @@
 
 module Data.List
    ( 
-
-
-
-
+#ifdef __NHC__
+     [] (..)
+   ,
+#endif
 
    -- * Basic functions
 
@@ -197,19 +197,19 @@ module Data.List
 
    ) where
 
-
-
-
+#ifdef __NHC__
+import Prelude hiding (Maybe(..))
+#endif
 
 import Data.Maybe
 import Data.Char	( isSpace )
 
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+import GHC.Num
+import GHC.Real
+import GHC.List
+import GHC.Base
+#endif
 
 infix 5 \\ -- comment to fool cpp
 
@@ -243,16 +243,16 @@ findIndex p     = listToMaybe . findIndices p
 -- indices of all elements satisfying the predicate, in ascending order.
 findIndices      :: (a -> Bool) -> [a] -> [Int]
 
-
+#if defined(USE_REPORT_PRELUDE) || !defined(__GLASGOW_HASKELL__)
 findIndices p xs = [ i | (x,i) <- zip xs [0..], p x]
-
-
-
-
-
-
-
-
+#else
+-- Efficient definition
+findIndices p ls = loop 0# ls
+		 where
+	 	   loop _ [] = []
+		   loop n (x:xs) | p x       = I# n : loop (n +# 1#) xs
+				 | otherwise = loop (n +# 1#) xs
+#endif  /* USE_REPORT_PRELUDE */
 
 -- | The 'isPrefixOf' function takes two lists and returns 'True'
 -- iff the first list is a prefix of the second.
@@ -284,9 +284,9 @@ isInfixOf needle haystack = any (isPrefixOf needle) (tails haystack)
 -- It is a special case of 'nubBy', which allows the programmer to supply
 -- their own equality test.
 nub                     :: (Eq a) => [a] -> [a]
-
-
-
+#ifdef USE_REPORT_PRELUDE
+nub                     =  nubBy (==)
+#else
 -- stolen from HBC
 nub l                   = nub' l []		-- '
   where
@@ -294,16 +294,16 @@ nub l                   = nub' l []		-- '
     nub' (x:xs) ls				-- '
 	| x `elem` ls   = nub' xs ls		-- '
 	| otherwise     = x : nub' xs (x:ls)	-- '
-
+#endif
 
 -- | The 'nubBy' function behaves just like 'nub', except it uses a
 -- user-supplied equality predicate instead of the overloaded '=='
 -- function.
 nubBy			:: (a -> a -> Bool) -> [a] -> [a]
-
-
-
-
+#ifdef USE_REPORT_PRELUDE
+nubBy eq []             =  []
+nubBy eq (x:xs)         =  x : nubBy eq (filter (\ y -> not (eq x y)) xs)
+#else
 nubBy eq l              = nubBy' l []
   where
     nubBy' [] _		= []
@@ -319,7 +319,7 @@ nubBy eq l              = nubBy' l []
 elem_by :: (a -> a -> Bool) -> a -> [a] -> Bool
 elem_by _  _ []		=  False
 elem_by eq y (x:xs)	=  x `eq` y || elem_by eq y xs
-
+#endif
 
 
 -- | 'delete' @x@ removes the first occurrence of @x@ from its list argument.
@@ -467,46 +467,46 @@ insertBy cmp x ys@(y:ys')
      GT -> y : insertBy cmp x ys'
      _  -> x : ys
 
+#ifdef __GLASGOW_HASKELL__
 
+-- | 'maximum' returns the maximum value from a list,
+-- which must be non-empty, finite, and of an ordered type.
+-- It is a special case of 'Data.List.maximumBy', which allows the
+-- programmer to supply their own comparison function.
+maximum                 :: (Ord a) => [a] -> a
+maximum []              =  errorEmptyList "maximum"
+maximum xs              =  foldl1 max xs
 
+{-# RULES 
+  "maximumInt"     maximum = (strictMaximum :: [Int]     -> Int);
+  "maximumInteger" maximum = (strictMaximum :: [Integer] -> Integer)
+ #-}
 
+-- We can't make the overloaded version of maximum strict without
+-- changing its semantics (max might not be strict), but we can for
+-- the version specialised to 'Int'.
+strictMaximum		:: (Ord a) => [a] -> a
+strictMaximum []        =  errorEmptyList "maximum"
+strictMaximum xs        =  foldl1' max xs
 
+-- | 'minimum' returns the minimum value from a list,
+-- which must be non-empty, finite, and of an ordered type.
+-- It is a special case of 'Data.List.minimumBy', which allows the
+-- programmer to supply their own comparison function.
+minimum                 :: (Ord a) => [a] -> a
+minimum []              =  errorEmptyList "minimum"
+minimum xs              =  foldl1 min xs
 
+{-# RULES
+  "minimumInt"     minimum = (strictMinimum :: [Int]     -> Int);
+  "minimumInteger" minimum = (strictMinimum :: [Integer] -> Integer)
+ #-}
 
+strictMinimum		:: (Ord a) => [a] -> a
+strictMinimum []        =  errorEmptyList "minimum"
+strictMinimum xs        =  foldl1' min xs
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif /* __GLASGOW_HASKELL__ */
 
 -- | The 'maximumBy' function takes a comparison function and a list
 -- and returns the greatest element of the list by the comparison function.
@@ -715,10 +715,10 @@ sort :: (Ord a) => [a] -> [a]
 -- | The 'sortBy' function is the non-overloaded version of 'sort'.
 sortBy :: (a -> a -> Ordering) -> [a] -> [a]
 
-
-
-
-
+#ifdef USE_REPORT_PRELUDE
+sort = sortBy compare
+sortBy cmp = foldr (insertBy cmp) []
+#else
 
 sortBy cmp l = mergesort cmp l
 sort l = mergesort compare l
@@ -825,7 +825,7 @@ rqpart cmp x (y:ys) rle rgt r =
     	_  -> rqpart cmp x ys (y:rle) rgt r
 -}
 
-
+#endif /* USE_REPORT_PRELUDE */
 
 -- | The 'unfoldr' function is a \`dual\' to 'foldr': while 'foldr'
 -- reduces a list to a summary value, 'unfoldr' builds a list from
@@ -858,96 +858,96 @@ foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
 foldl' f a (x:xs) = let a' = f a x in a' `seq` foldl' f a' xs
 
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+-- | 'foldl1' is a variant of 'foldl' that has no starting value argument,
+-- and thus must be applied to non-empty lists.
+foldl1                  :: (a -> a -> a) -> [a] -> a
+foldl1 f (x:xs)         =  foldl f x xs
+foldl1 _ []             =  errorEmptyList "foldl1"
+#endif /* __GLASGOW_HASKELL__ */
 
 -- | A strict version of 'foldl1'
 foldl1'                  :: (a -> a -> a) -> [a] -> a
 foldl1' f (x:xs)         =  foldl' f x xs
 foldl1' _ []             =  errorEmptyList "foldl1'"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef __GLASGOW_HASKELL__
+-- -----------------------------------------------------------------------------
+-- List sum and product
+
+{-# SPECIALISE sum     :: [Int] -> Int #-}
+{-# SPECIALISE sum     :: [Integer] -> Integer #-}
+{-# SPECIALISE product :: [Int] -> Int #-}
+{-# SPECIALISE product :: [Integer] -> Integer #-}
+-- | The 'sum' function computes the sum of a finite list of numbers.
+sum                     :: (Num a) => [a] -> a
+-- | The 'product' function computes the product of a finite list of numbers.
+product                 :: (Num a) => [a] -> a
+#ifdef USE_REPORT_PRELUDE
+sum                     =  foldl (+) 0  
+product                 =  foldl (*) 1
+#else
+sum	l	= sum' l 0
+  where
+    sum' []     a = a
+    sum' (x:xs) a = sum' xs (a+x)
+product	l	= prod l 1
+  where
+    prod []     a = a
+    prod (x:xs) a = prod xs (a*x)
+#endif
+
+-- -----------------------------------------------------------------------------
+-- Functions on strings
+
+-- | 'lines' breaks a string up into a list of strings at newline
+-- characters.  The resulting strings do not contain newlines.
+lines			:: String -> [String]
+lines ""		=  []
+lines s			=  let (l, s') = break (== '\n') s
+			   in  l : case s' of
+					[]     	-> []
+					(_:s'') -> lines s''
+
+-- | 'unlines' is an inverse operation to 'lines'.
+-- It joins lines, after appending a terminating newline to each.
+unlines			:: [String] -> String
+#ifdef USE_REPORT_PRELUDE
+unlines			=  concatMap (++ "\n")
+#else
+-- HBC version (stolen)
+-- here's a more efficient version
+unlines [] = []
+unlines (l:ls) = l ++ '\n' : unlines ls
+#endif
+
+-- | 'words' breaks a string up into a list of words, which were delimited
+-- by white space.
+words			:: String -> [String]
+words s			=  case dropWhile {-partain:Char.-}isSpace s of
+				"" -> []
+				s' -> w : words s''
+				      where (w, s'') = 
+                                             break {-partain:Char.-}isSpace s'
+
+-- | 'unwords' is an inverse operation to 'words'.
+-- It joins words with separating spaces.
+unwords			:: [String] -> String
+#ifdef USE_REPORT_PRELUDE
+unwords []		=  ""
+unwords ws		=  foldr1 (\w s -> w ++ ' ':s) ws
+#else
+-- HBC version (stolen)
+-- here's a more efficient version
+unwords []		=  ""
+unwords [w]		= w
+unwords (w:ws)		= w ++ ' ' : unwords ws
+#endif
+
+#else  /* !__GLASGOW_HASKELL__ */
 
 errorEmptyList :: String -> a
 errorEmptyList fun =
   error ("Prelude." ++ fun ++ ": empty list")
 
-
+#endif /* !__GLASGOW_HASKELL__ */

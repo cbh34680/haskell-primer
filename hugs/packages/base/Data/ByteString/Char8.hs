@@ -205,17 +205,17 @@ module Data.ByteString.Char8 (
         hPutStr,                -- :: Handle -> ByteString -> IO ()
         hPutStrLn,              -- :: Handle -> ByteString -> IO ()
 
-
-
-
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+        -- * Low level construction
+        -- | For constructors from foreign language types see "Data.ByteString"
+        packAddress,            -- :: Addr# -> ByteString
+        unsafePackAddress,      -- :: Int -> Addr# -> ByteString
+#endif
 
         -- * Utilities (needed for array fusion)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+        unpackList,
+#endif
 
     ) where
 
@@ -246,16 +246,16 @@ import Data.ByteString (empty,null,length,tail,init,append
                        ,hGetLine, hGetNonBlocking
                        ,packCString,packCStringLen, packMallocCString
                        ,useAsCString,useAsCStringLen, copyCString,copyCStringLen
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+                       ,unpackList
+#endif
                        )
 
 import Data.ByteString.Base (
                         ByteString(..)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+                       ,packAddress, unsafePackAddress
+#endif
                        ,c2w, w2c, unsafeTail, isSpaceWord8, inlinePerformIO
                        )
 
@@ -266,18 +266,18 @@ import System.IO                (openFile,hClose,hFileSize,IOMode(..))
 import Control.Exception        (bracket)
 import Foreign
 
+#if defined(__GLASGOW_HASKELL__)
+import GHC.Base                 (Char(..),unpackCString#,unsafeCoerce#)
+import GHC.IOBase               (IO(..),stToIO)
+import GHC.Prim                 (Addr#,writeWord8OffAddr#,plusAddr#)
+import GHC.Ptr                  (Ptr(..))
+import GHC.ST                   (ST(..))
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
+#define STRICT1(f) f a | a `seq` False = undefined
+#define STRICT2(f) f a b | a `seq` b `seq` False = undefined
+#define STRICT3(f) f a b c | a `seq` b `seq` c `seq` False = undefined
+#define STRICT4(f) f a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
 
 ------------------------------------------------------------------------
 
@@ -291,31 +291,31 @@ singleton = B.singleton . c2w
 -- For applications with large numbers of string literals, pack can be a
 -- bottleneck. In such cases, consider using packAddress (GHC only).
 pack :: String -> ByteString
-
+#if !defined(__GLASGOW_HASKELL__)
 
 pack str = B.unsafeCreate (P.length str) $ \p -> go p str
     where go _ []     = return ()
           go p (x:xs) = poke p (c2w x) >> go (p `plusPtr` 1) xs
 
+#else /* hack away */
 
+pack str = B.unsafeCreate (P.length str) $ \(Ptr p) -> stToIO (go p str)
+  where
+    go :: Addr# -> [Char] -> ST a ()
+    go _ []        = return ()
+    go p (C# c:cs) = writeByte p (unsafeCoerce# c) >> go (p `plusAddr#` 1#) cs
 
+    writeByte p c = ST $ \s# ->
+        case writeWord8OffAddr# p 0# c s# of s2# -> (# s2#, () #)
+    {-# INLINE writeByte #-}
+{-# INLINE [1] pack #-}
 
+{-# RULES
+    "FPS pack/packAddress" forall s .
+       pack (unpackCString# s) = B.packAddress s
+ #-}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
 -- | /O(n)/ Converts a 'ByteString' to a 'String'.
 unpack :: ByteString -> [Char]
@@ -520,16 +520,16 @@ takeWhile f = B.takeWhile (f . w2c)
 -- | 'dropWhile' @p xs@ returns the suffix remaining after 'takeWhile' @p xs@.
 dropWhile :: (Char -> Bool) -> ByteString -> ByteString
 dropWhile f = B.dropWhile (f . w2c)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] dropWhile #-}
+#endif
 
 -- | 'break' @p@ is equivalent to @'span' ('not' . p)@.
 break :: (Char -> Bool) -> ByteString -> (ByteString, ByteString)
 break f = B.break (f . w2c)
-
-
-
+#if defined(__GLASGOW_HASKELL__)
+{-# INLINE [1] break #-}
+#endif
 
 -- | 'span' @p xs@ breaks the ByteString into two segments. It is
 -- equivalent to @('takeWhile' p xs, 'dropWhile' p xs)@
@@ -798,7 +798,7 @@ breakSpace (PS x s l) = inlinePerformIO $ withForeignPtr x $ \p -> do
 {-# INLINE breakSpace #-}
 
 firstspace :: Ptr Word8 -> Int -> Int -> IO Int
-firstspace a b c | a `seq` b `seq` c `seq` False = undefined
+STRICT3(firstspace)
 firstspace ptr n m
     | n >= m    = return n
     | otherwise = do w <- peekByteOff ptr n
@@ -822,7 +822,7 @@ dropSpace (PS x s l) = inlinePerformIO $ withForeignPtr x $ \p -> do
 {-# INLINE dropSpace #-}
 
 firstnonspace :: Ptr Word8 -> Int -> Int -> IO Int
-firstnonspace a b c | a `seq` b `seq` c `seq` False = undefined
+STRICT3(firstnonspace)
 firstnonspace ptr n m
     | n >= m    = return n
     | otherwise = do w <- peekElemOff ptr n
@@ -917,7 +917,7 @@ readInt as
             _   -> loop False 0 0 as
 
     where loop :: Bool -> Int -> Int -> ByteString -> Maybe (Int, ByteString)
-          loop a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+          STRICT4(loop)
           loop neg i n ps
               | null ps   = end neg i n ps
               | otherwise =
@@ -953,7 +953,7 @@ readInteger as
 
           loop :: Int -> Int -> [Integer]
                -> ByteString -> (Integer, ByteString)
-          loop a b c d | a `seq` b `seq` c `seq` d `seq` False = undefined
+          STRICT4(loop)
           loop d acc ns ps
               | null ps   = combine d acc ns empty
               | otherwise =

@@ -25,19 +25,19 @@ module Data.Word
 	-- $notes
 	) where
 
+#ifdef __GLASGOW_HASKELL__
+import GHC.Word
+#endif
 
-
-
-
-
+#ifdef __HUGS__
 import Hugs.Word
+#endif
 
-
-
-
-
-
-
+#ifdef __NHC__
+import NHC.FFI (Word8, Word16, Word32, Word64)
+import NHC.SizedTypes (Word8, Word16, Word32, Word64)	-- instances of Bits
+type Word = Word32
+#endif
 
 {- $notes
 

@@ -1,16 +1,22 @@
 import qualified Data.List as DL
 import Data.Function ((&))
 import qualified System.Random as SR
+import qualified Control.Monad as CM
 
 {-
 https://wiki.haskell.org/99_questions
+
+hlint -i "Use camelCase" p99.hs
 -}
 
 myLast :: [a] -> a
-myLast = foldl1 (flip const)
+--myLast = foldl1 (flip const)
+--myLast = foldl1 (const id)
+myLast = foldl1 (\_ x -> x)
 
 myButLast :: [a] -> a
-myButLast (x:_:[]) = x
+--myButLast (x:_:[]) = x
+myButLast [x, _] = x
 myButLast (_:xs) = myButLast xs
 
 elementAt :: [a] -> Int -> Maybe a
@@ -24,7 +30,8 @@ myReverse :: [a] -> [a]
 myReverse = foldl (flip (:)) []
 
 isPalindrome :: Eq a => [a] -> Bool
-isPalindrome xs = xs == (reverse xs)
+--isPalindrome xs = xs == (reverse xs)
+isPalindrome xs = xs == reverse xs
 
 data NestedList a = Elem a | List [NestedList a]
 
@@ -89,7 +96,8 @@ rotate xs n = drop m ys & take l
     where
         ys = cycle xs
         l = length xs
-        m = if n >= 0 then n else l- (abs n)
+        m = if n >= 0 then n else l - abs n
+--        m = if n >= 0 then n else l - (abs n)
 
 
 removeAt :: Int -> [a] -> (a, [a])
@@ -119,32 +127,85 @@ randomInt = SR.randomRIO
 
 rnd_select :: [a] -> Int -> IO [a]
 rnd_select [] _ = error "no data"
+
+rnd_select xs n = f >>= g
+    where
+        l = length xs - 1
+        g = return . map (xs !!)
+        f = CM.replicateM n $ randomInt (0, l)
+--        f = sequence . replicate n $ randomInt (0, l)
+
 {-
+another
+
+[1]
 rnd_select xs n = do
     ys <- sequence . replicate n $ randomInt (0, length xs - 1)
     return $ map (xs !!) ys
 
+[2]
+rnd_select xs n = f g
+    where
+        f = sequence . replicate n
+        g = randomInt (0, length xs - 1) >>= return . (xs !!)
+
 ---
 ghci> rnd_select ['a'..'z'] 3
 "dfj"
-
 -}
--- rnd_select xs n = sequence . replicate n $ randomInt (0, length xs - 1) >>= return . (xs !!)
-rnd_select xs n = sequence . replicate n $ randomInt (0, length xs - 1) >>= \ys -> return ( map (xs !!) ys )
 
 
+uniqRandom :: Int -> [Int] -> IO Int
+uniqRandom mx xs = do
+    x <- randomInt (0, mx)
+    if x `elem` xs then uniqRandom mx xs else return x
 
 
+diff_select :: Int -> Int -> IO [Int]
+diff_select 0 _ = return []
+diff_select n mx = do
+    xs <- diff_select (n - 1) mx
+    x <- uniqRandom mx xs
+
+    return (x:xs)
 
 
+snds :: [(a,b)] -> [b]
+snds = foldr (\(_,x) acc -> x:acc) []
+
+rnd_permu :: Ord a => [a] -> IO [a]
+rnd_permu xs = foldr f (return []) xs >>= \ys -> return (g ys xs)
+    where
+        f x acc = do
+            ls <- acc
+            x <- uniqRandom (length xs - 1) ls
+            return (x:ls)
+
+        g ys xs = zip ys xs & DL.sort & snds
 
 
+-- TODO: p26
+-- TODO: p27
 
 
+lsort :: [[a]] -> [[a]]
+lsort = DL.sortBy (\a b -> compare (length a) (length b))
 
 
+-- TODO: p28.b
+-- TODO: p31 - 60
 
+data Tree a = Empty | Branch a (Tree a) (Tree a) deriving Show
 
+tree4 = Branch 1 (Branch 2 Empty (Branch 4 Empty Empty))
+                 (Branch 2 Empty Empty)
+
+countLeaves :: Tree a -> Int
+countLeaves Empty = 0
+countLeaves (Branch _ Empty Empty) = 1
+countLeaves (Branch _ l r) = countLeaves l + countLeaves r
+
+-- TODO: p61.A - 99
 
 
 -- EOF

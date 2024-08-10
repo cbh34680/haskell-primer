@@ -3,7 +3,9 @@
 import Control.Exception
 import Control.Monad
 import Data.Maybe
+import Data.Typeable
 import System.Directory
+import System.FilePath.Posix
 import System.Posix.Files
 import System.Posix.Types
 import Data.Functor
@@ -22,31 +24,40 @@ lsFile path = do
         else return Nothing
 
 
+isDir :: FilePath -> IO Bool
+isDir path = do
+    s <- getFileStatus path
+    return $ isDirectory s
 
--- dirTree :: FilePath -> IO Dir
-dirTree path = do
+
+dirTree :: FilePath -> IO Dir
+dirTree arg = do
+    let path = dropTrailingPathSeparator arg
+
     contents <- listDirectory path
-    files <- catMaybes <$> mapM lsFile contents
+    files <- catMaybes <$> mapM (lsFile . (path </>)) contents
 
-    return $ GenDir { dName=path, files=files, dirs=[] }
+    dirNames <- filterM (isDir . (path </>)) contents
+    dirs <- mapM (dirTree . (path </>)) dirNames
+
+    return $ GenDir { dName=path, files=files, dirs=dirs }
 
 
-
-
-f :: String -> IO ()
-f path = printTree `catch` (const (return ()) :: SomeException -> IO ())
+printTree :: String -> IO ()
+--printTree path = f `catch` (const (return ()) :: SomeException -> IO ())
+printTree path = f `catch` h
     where
-        printTree = do
+        f = do
             tree <- dirTree path
             print tree
+
+        h :: SomeException -> IO ()
+        h (SomeException e) = do
+            putStrLn (show (typeOf e))
+            putStrLn (displayException e)
     
 
-
-
-
-
-
-
+f = printTree "/home/ubuntu/a"
 
 
 -- EOF

@@ -25,7 +25,7 @@ lsFile path = do
 
 -- dirTree :: FilePath -> IO Dir
 dirTree path = do
-    contents <- catch (listDirectory path) (const (return []) :: SomeException -> IO [a])
+    contents <- listDirectory path
     files <- catMaybes <$> mapM lsFile contents
 
     return $ GenDir { dName=path, files=files, dirs=[] }
@@ -33,5 +33,20 @@ dirTree path = do
 
 
 
-f = dirTree "."
+f :: String -> IO ()
+f path = printTree `catch` (const (return ()) :: SomeException -> IO ())
+    where
+        printTree = do
+            tree <- dirTree path
+            print tree
+    
 
+
+
+
+
+
+
+
+
+-- EOF

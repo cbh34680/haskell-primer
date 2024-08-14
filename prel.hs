@@ -176,6 +176,8 @@ dropWhile p xs'@(x:xs)
     | p x = dropWhile p xs
     | otherwise = xs'
 
+dropWhileEnd p = foldr (\x xs -> if p x && null xs then [] else x:xs) []
+
 break _ [] = ([], [])
 break p xs'@(x:xs)
     | p x = ([], xs')

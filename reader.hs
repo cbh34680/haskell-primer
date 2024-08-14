@@ -1,10 +1,11 @@
-import Control.Monad.Trans
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Class
 import System.IO
 import Control.Exception
 import Data.Char
 import Data.List
-import Text.Read
 
+import qualified Text.Read as TR
 import qualified Data.List.Split as DLS
 
 data Env = Env { unStart :: Int, unEnd :: Int } deriving Show
@@ -18,22 +19,36 @@ loadEnv path = do
         genEnv = do
             confs <- map arr2pair . str2arrs <$> readFile path
 
-            let toInt key = lookup key confs >>= readMaybe
+            let toInt key = lookup key confs >>= TR.readMaybe
 
             return $ Env <$> toInt "start" <*> toInt "end"
 
-        str2arrs = filter (\xs -> and ([cond1, cond2] <*> [xs])) . map (map trim . DLS.splitOn "=") . lines
+        str2arrs = filter (\xs -> and ([cond1, cond2] <*> [xs])) .
+                    map (map trim . DLS.splitOn "=") . lines
+
         arr2pair = (,) <$> (!! 0) <*> (!! 1)
 
         cond1 = (== 2) . length
         cond2 = ('#' /=) . head . (!! 0)
         trim = dropWhileEnd isSpace . dropWhile isSpace
 
+
+printRange :: ReaderT Env IO ()
+printRange = do
+    s <- asks unStart
+    e <- asks unEnd
+
+    lift $ print [s .. e]
+
+    return ()
+
 main = do
     me <- loadEnv "env.conf"
+
     case me of
-        Just e -> putStrLn $ show (unStart e)
-    
+        Just env -> runReaderT printRange env
+        _ -> return ()
+
 
 
 

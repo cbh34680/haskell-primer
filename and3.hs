@@ -11,6 +11,8 @@ and3 x y z = x && y && z
 
 f = filter (\xs -> and ([cond1, cond2, cond3] <*> [xs])) kvs
 
+f' = filter (\xs -> and (sequenceA [cond1, cond2, cond3] xs)) kvs
+
 g = filter g' kvs
     where
         g' = do
@@ -20,4 +22,5 @@ g = filter g' kvs
             return (and3 a b c)
 
 h = filter (and3 <$> cond1 <*> cond2 <*> cond3) kvs
+
 

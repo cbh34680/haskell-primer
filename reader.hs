@@ -1,55 +1,26 @@
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.Class
-import System.IO
-import Control.Exception
-import Data.Char
-import Data.List
+-- hugs
 
-import qualified Text.Read as TR
-import qualified Data.List.Split as DLS
+data Func r a = GenFunc { runFunc :: r -> a }
 
-data Env = Env { unStart :: Int, unEnd :: Int } deriving Show
+instance Monad (Func x) where
+    return x = GenFunc $ \r -> x
+    m >>= f = GenFunc $ \r -> let a = (runFunc m) r in (runFunc (f a)) r
 
--- "start=1\nend=2"
+fix :: Int -> Func a Int
+fix n = GenFunc $ \r -> n
 
-loadEnv :: FilePath -> IO (Maybe Env)
-loadEnv path = do
-    genEnv `catch` (\(SomeException e) -> return Nothing)
-    where
-        genEnv = do
-            confs <- map arr2pair . str2arrs <$> readFile path
+arg :: Func String String
+arg = GenFunc $ \r -> r
 
-            let toInt key = lookup key confs >>= TR.readMaybe
+step :: Func String Int
+step = (fix 1) >> ((arg) >>= (\b -> (return (length b))))
 
-            return $ Env <$> toInt "start" <*> toInt "end"
-
-        str2arrs = filter (\xs -> and ([cond1, cond2] <*> [xs])) .
-                    map (map trim . DLS.splitOn "=") . lines
-
-        arr2pair = (,) <$> (!! 0) <*> (!! 1)
-
-        cond1 = (== 2) . length
-        cond2 = ('#' /=) . head . (!! 0)
-        trim = dropWhileEnd isSpace . dropWhile isSpace
-
-
-printRange :: ReaderT Env IO ()
-printRange = do
-    s <- asks unStart
-    e <- asks unEnd
-
-    lift $ print [s .. e]
-
-    return ()
-
-main = do
-    me <- loadEnv "env.conf"
-
-    case me of
-        Just env -> runReaderT printRange env
-        _ -> return ()
+f = runFunc step "abc"
 
 
 
 
--- EOF
+
+
+
+

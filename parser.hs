@@ -1,4 +1,6 @@
 import qualified Data.Char as C
+import Control.Applicative
+import Control.Monad
 
 -- ReadS ... String -> [(a, String)]
 
@@ -16,7 +18,7 @@ failure = Parser $ \_ -> []
 
 
 f = parse (item) "abcde"
-g = parse (failure) "abcde"
+f' = parse (failure) "abcde"
 
 
 instance Applicative Parser where
@@ -24,7 +26,7 @@ instance Applicative Parser where
     (Parser p) <*> (Parser q) = Parser $ \s -> [(f x, s'') | (f, s') <- p s, (x, s'') <- q s']
 
 
-f' = parse (pure (,) <*> item <*> item) "abcde"
+g = parse (pure (,) <*> item <*> item) "abcde"
 
 
 
@@ -33,10 +35,64 @@ instance Monad Parser where
 
 
 toUpperM c = Parser $ \s -> [(C.toUpper c, s)]
-stringsM c = Parser $ \s -> [([c], s)]
+toStringM c = Parser $ \s -> [([c], s)]
 
 
-f'' = parse (item >>= toUpperM >>= stringsM) "abcde"
+h = parse (item >>= toUpperM >>= toStringM) "abcde"
+
+
+
+{-
+instance Semigroup a => Semigroup (Parser a) where
+    (Parser p) <> (Parser q) = Parser $ \s -> [(x <> y, s'') | (x, s') <- p s, (y, s'') <- q s']
+-}
+instance Semigroup (Parser a) where
+    (Parser p) <> (Parser q) = Parser $ \s -> case p s of
+                                                [] -> q s
+                                                x -> x
+
+
+i = parse ((item >>= toStringM) <> (item >>= toStringM)) "abcde"
+
+i' = parse ((item >>= toStringM) <> failure) "abcde"
+i'' = parse (failure <> (item >>= toStringM)) "abcde"
+
+j = parse (pure 'A' <> item) "abcde"
+j' = parse (item <> pure 'A') "abcde"
+
+j'' = parse (failure <> item) "abcde"
+j''' = parse (item <> failure) "abcde"
+
+
+
+
+instance Monoid (Parser a) where
+    --mempty = Parser $ \s -> []
+    mempty = Parser $ const []
+
+
+k = parse (mempty <> item <> item) "abcde"
+k' = parse (mempty <> mempty <> item) "abcde"
+
+
+
+instance Alternative Parser where
+    empty = mempty
+    (<|>) = (<>)
+
+
+l = parse (empty <|> item) "abcde"
+l' = parse (item <|> empty) "abcde"
+
+l'' = parse (item >>= \x -> guard (x `elem` "ab") >> return x) "abcde"
+l''' = parse (item >>= \x -> guard (x `elem` "AB") >> return x) "abcde"
+
+
+
+
+
+
+
 
 
 

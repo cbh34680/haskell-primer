@@ -11,6 +11,7 @@ readInt = TR.readMaybe
 inputNum :: MaybeT IO Int
 
 --inputNum = MaybeT $ fmap readInt getLine
+
 inputNum = do
     s <- lift $ getLine
     hoistMaybe $ readInt s

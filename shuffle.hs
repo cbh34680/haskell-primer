@@ -11,3 +11,19 @@ shuffle :: [Int] -> IO [Int]
 shuffle xs = map snd . sort . flip zip xs <$> rnds (length xs)
 
 f = shuffle [1..10]
+
+------------------------------------------------------
+
+shuffle' [] = return []
+
+shuffle' xs = do
+    n <- randomRIO (0, length xs - 1) :: IO Int
+
+    let x = xs !! n
+        xs' = take n xs ++ drop (n + 1) xs
+
+    ((xs !! n) :) <$> shuffle' xs
+
+
+
+g = shuffle' [1..10]

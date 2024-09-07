@@ -4,6 +4,7 @@ import System.Random.Shuffle
 import Data.Bool
 import Data.Maybe
 import Data.List
+import Control.Monad.State
 import qualified Data.Ord as Ord
 
 data Suit = Hearts | Diamonds | Clubs | Spades deriving (Show, Enum)
@@ -12,7 +13,7 @@ data Card = Card { suit::Suit, numOfSuit::NumOfSuit } deriving Show
 
 data Player = Player {
                 name::String, stop::Bool,
-                times::Int, threshold::Int,
+                threshold::Int,
                 hands::[Card] } deriving Show
 
 
@@ -33,6 +34,12 @@ maxScore xs
             case ys of
                 [] -> Nothing
                 _  -> Just (maximum ys)
+
+
+sumHands :: [Card] -> [Int]
+sumHands xs
+    | null xs = [0]
+    | otherwise = map sum $ mapM (toNumbers . numOfSuit) xs
 
 
 genCards :: IO [Card]
@@ -60,6 +67,7 @@ main = do
 
     putStrLn "=== results ===>>>"
     mapM_ (\x -> print x >> putStrLn "") lastPlayers
+    mapM_ (print . sumHands . hands) lastPlayers
     putStrLn "=== results ===<<<"
 
     print $ winner lastPlayers
@@ -80,29 +88,57 @@ winner players =
 
 newPlayer :: Int -> IO Player
 newPlayer n = do
-    times' <- randomRIO (1, 5)
     threshold' <- randomRIO (15, 18)
 
     return $ Player {
                 name=show (n + 1), stop=False,
-                times=times', threshold=threshold',
+                threshold=threshold',
                 hands=[] }
 
 
 play :: [Card] -> [Player] -> IO [Player]
 play cards players = do
-    -- let fin = (== 0) . length $ filter (not . stop) players
-    -- let fin = null $ filter (not . stop) players
-    let fin = any (not . stop) players
+    --let fin = (== 0) . length $ filter (not . stop) players
+    let fin = null $ filter (not . stop) players
+    --let fin = any (not . stop) players
 
     if fin then return players else
         do
             let lenCards = sum . map (length . hands)
 
-            let nextPlayers = decide cards players
-            let consumed = lenCards nextPlayers - lenCards players
+            let (nextPlayers, nextCards) = runState (decide' players) cards
 
-            play (drop consumed cards) nextPlayers
+            --let nextPlayers = decide cards players
+            --let consumed = lenCards nextPlayers - lenCards players
+            --let nectCards = drop consumed cards
+
+            play nextCards nextPlayers
+
+
+decide' :: [Player] -> State [Card] [Player]
+
+decide' [] = return []
+decide' (player:players)
+    | True <- stop player = do
+        xs <- decide' players
+        return $ player : xs
+
+    | otherwise = do
+        xs <- decide' players
+
+        case maxScore (hands player) of
+            Nothing -> do
+                return $ player { stop=True } : xs
+
+            Just score ->
+                if score < threshold player then
+                    do
+                        cards <- get
+                        put $ tail cards
+
+                        return $ player { hands=head cards:hands player } : xs
+                    else
+                        return $ player { stop=True } : xs
 
 
 decide :: [Card] -> [Player] -> [Player]

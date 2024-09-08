@@ -43,7 +43,8 @@ sumHands xs
 
 
 genCards :: IO [Card]
-genCards = shuffleM [ Card suit' numOfSuit' | suit' <- [Hearts ..], numOfSuit' <- genNumbers ]
+genCards = shuffleM [Card suit' numOfSuit'
+            | suit' <- [Hearts ..], numOfSuit' <- genNumbers]
     where
         genNumbers = A : map N [2..10] ++ [J, Q, K]
 
@@ -76,7 +77,8 @@ main = do
 winner players =
     let
         --xs = groupBy (\a b -> fst a == fst b) . reverse . sort . catMaybes $
-        xs = groupBy (\a b -> fst a == fst b) . sortBy (Ord.comparing Ord.Down) . catMaybes $
+        xs = groupBy (\a b -> fst a == fst b)
+            . sortBy (Ord.comparing Ord.Down) . catMaybes $
             --zipWith (\a b -> fmap (\n -> (n, b)) a)
             zipWith (\a b -> fmap (, b) a)
                 (map (maxScore . hands) players) (map name players)
@@ -134,9 +136,11 @@ decide'' player
                 if score < threshold player then
                     do
                         cards <- get
-                        put $ tail cards
+                        --put $ tail cards
+                        modify tail
 
                         return $ player { hands=head cards:hands player }
+
                     else
                         return $ player { stop=True }
 

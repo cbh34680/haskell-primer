@@ -99,24 +99,49 @@ newPlayer n = do
 play :: [Card] -> [Player] -> IO [Player]
 play cards players = do
     --let fin = (== 0) . length $ filter (not . stop) players
-    let fin = null $ filter (not . stop) players
-    --let fin = any (not . stop) players
+    --let fin = null $ filter (not . stop) players
+    --let fin = not (any (not . stop) players)
+    --let fin = not (not (all stop players))
+    let fin = all stop players
 
     if fin then return players else
         do
-            let lenCards = sum . map (length . hands)
-
-            let (nextPlayers, nextCards) = runState (decide' players) cards
-
+            --let lenCards = sum . map (length . hands)
             --let nextPlayers = decide cards players
             --let consumed = lenCards nextPlayers - lenCards players
             --let nectCards = drop consumed cards
 
+            --let (nextPlayers, nextCards) = runState (decide' players) cards
+
+            let (nextPlayers, nextCards) =
+                    runState (mapM decide'' players) cards
+                    --runState (sequence $ map decide'' players) cards
+
             play nextCards nextPlayers
 
 
-decide' :: [Player] -> State [Card] [Player]
+decide'' :: Player -> State [Card] Player
+decide'' player
+    | True <- stop player = do
+        return player
 
+    | otherwise = do
+        case maxScore (hands player) of
+            Nothing -> do
+                return $ player { stop=True }
+
+            Just score ->
+                if score < threshold player then
+                    do
+                        cards <- get
+                        put $ tail cards
+
+                        return $ player { hands=head cards:hands player }
+                    else
+                        return $ player { stop=True }
+
+
+decide' :: [Player] -> State [Card] [Player]
 decide' [] = return []
 decide' (player:players)
     | True <- stop player = do
@@ -142,10 +167,8 @@ decide' (player:players)
 
 
 decide :: [Card] -> [Player] -> [Player]
-
 decide [] _ = error "no card"
 decide (card:cards) [] = []
-
 decide allcards@(card:cards) (player:players)
     | True <- stop player = player : decide allcards players
     | otherwise =

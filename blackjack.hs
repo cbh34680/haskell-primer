@@ -1,11 +1,12 @@
 import Control.Monad
 import System.Random
-import System.Random.Shuffle
+--import System.Random.Shuffle
 import Data.Bool
 import Data.Maybe
 import Data.List
 import Control.Monad.State
 import qualified Data.Ord as Ord
+import Debug.Trace
 
 data Suit = Hearts | Diamonds | Clubs | Spades deriving (Show, Enum)
 data NumOfSuit = A | N Int | J | Q | K deriving Show
@@ -42,8 +43,24 @@ sumHands xs
     | otherwise = map sum $ mapM (toNumbers . numOfSuit) xs
 
 
+shuffleM' :: [a] -> IO [a]
+shuffleM' [] = return []
+shuffleM' xs = do
+    xi <- randomRIO (0, length xs - 1)
+
+    let
+        y = xs !! xi
+        ls = take xi xs
+        rs = drop (xi + 1) xs
+
+    ys <- shuffleM' (ls ++ rs)
+
+    return (y:ys)
+
+
 genCards :: IO [Card]
-genCards = shuffleM [Card suit' numOfSuit'
+--genCards = shuffleM [Card suit' numOfSuit'
+genCards = shuffleM' [Card suit' numOfSuit'
             | suit' <- [Hearts ..], numOfSuit' <- genNumbers]
     where
         genNumbers = A : map N [2..10] ++ [J, Q, K]

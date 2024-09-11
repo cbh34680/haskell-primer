@@ -50,12 +50,15 @@ splitCards n xs = List.transpose $ f xs
 
 
 
-dropPairs [] = []
-dropPairs [x] = [x]
+dropPairs :: [Card] -> [Card] 
+dropPairs cards = f $ List.sort cards
+    where
+        f [] = []
+        f [x] = [x]
 
-dropPairs (x:xs@(y:zs))
-    | x == y = dropPairs zs
-    | otherwise = x: dropPairs xs
+        f (x:xs@(y:zs))
+            | x == y = f zs
+            | otherwise = x: f xs
 
 
 test1 = do
@@ -71,13 +74,12 @@ test1 = do
 
 genPlayers :: Int -> IO [Player]
 genPlayers n = do
-    xss <- map (dropPairs . List.sort) <$> (splitCards n <$> newCardSet)
+    xss <- map dropPairs <$> (splitCards n <$> newCardSet)
     return $ zipWith Player (map show [1 .. n]) xss
 
 
-
 main = do
-    players <- genPlayers 3
+    players <- genPlayers 5
 
     play players >>= putStrLn . ("looser is " ++) . name
 
@@ -90,70 +92,88 @@ play [x] = return x
 play players = do
     let
         nPlayers = length players
-        fromTo = zipWith (\player opponent -> (name player, name (players !! opponent)))
+
+        -- [(takeName, giveName)] : [("1", "2"), ("2", "3"), ("3", "1")]
+        matchTable = zipWith (\player opponent -> (name player, name (players !! opponent)))
             players (tail $ cycle [0 .. nPlayers - 1])
-        playerMap = Map.fromList $ map (\player -> (name player, player)) players
 
-    print fromTo
-    print playerMap
+    putStrLn $ mconcat ["# match table ", show matchTable]
 
-    newPlayerMap <- draw playerMap fromTo
+    nextPlayers <- winnerExits . playerMapToList <$> drawEach (playerListToMap players) matchTable
 
-    let
-        newPlayers = filter (not . null . hands) . map snd $ Map.toList newPlayerMap
-
+    {-
     print players
     print . sum $ map (length . hands) players
 
-    print newPlayers
-    print . sum $ map (length . hands) newPlayers
+    print nextPlayers
+    print . sum $ map (length . hands) nextPlayers
+    -}
 
-    play newPlayers
+    play nextPlayers
 
 
+playerListToMap :: [Player] -> Map.Map String Player
+playerListToMap = Map.fromList . map (\player -> (name player, player))
 
-draw :: Map.Map String Player -> [(String, String)] ->  IO (Map.Map String Player)
 
-draw playerMap [] = return playerMap
-draw playerMap ((from, to):xs) = do
+playerMapToList :: Map.Map String Player -> [Player]
+playerMapToList = map snd . Map.toList
+
+
+winnerExits :: [Player] -> [Player]
+winnerExits = filter (not . null . hands)
+
+
+drawEach :: Map.Map String Player -> [(String, String)] ->  IO (Map.Map String Player)
+
+drawEach playerMap [] = return playerMap
+drawEach playerMap ((takeName, giveName):nextMatchTable) = do
     let
-        takePlayer = fromJust $ Map.lookup from playerMap
-        givePlayer = fromJust $ Map.lookup to playerMap
+        takePlayer = fromJust $ Map.lookup takeName playerMap
+        givePlayer = fromJust $ Map.lookup giveName playerMap
 
-    if null (hands takePlayer) || null (hands givePlayer) then draw playerMap xs else
-        do
+    if null (hands takePlayer) || null (hands givePlayer)
+        then drawEach playerMap nextMatchTable
+
+        else do
             giveHands <- shuffleM $ hands givePlayer
-            giveTarget <- randomRIO (0, length giveHands - 1)
+            sel <- randomRIO (0, length giveHands - 1)
 
             let
-                ls = take giveTarget giveHands
-                rs = drop (giveTarget + 1) giveHands
-                giveCard = giveHands !! giveTarget
+                (selCard, restHands) = dropOut sel giveHands
 
-                newFromPlayer = takePlayer {hands=dropPairs . List.sort $ giveCard:hands takePlayer}
-                newToPlayer = givePlayer {hands=List.sort $ ls ++ rs}
-                newPlayerMap = Map.insert to newToPlayer $ Map.insert from newFromPlayer playerMap
+                nextTakePlayer = takePlayer {hands=dropPairs (selCard: hands takePlayer)}
+                nextGivePlayer = givePlayer {hands=restHands}
+
+                nextPlayerMap = foldr (\x r -> Map.insert (name x) x r) playerMap
+                                    [nextGivePlayer, nextTakePlayer]
 
             putStrLn "==>>>"
+            putStrLn $ mconcat ["# take '", takeName, "' <-- Card -- give '", giveName, "'"]
+            putStrLn ""
+            putStrLn "* before"
             print takePlayer
             print givePlayer
-            print giveHands
-            print giveTarget
-            print ls
-            print giveCard
-            print rs
-            print newFromPlayer
-            print newToPlayer
-            print newPlayerMap
+            putStrLn ""
+            putStrLn $ mconcat ["# shuffled", show giveHands]
+            putStrLn $ mconcat ["# select[", show sel, "] card is ", show selCard]
+            putStrLn ""
+            putStrLn "* after"
+            print nextTakePlayer
+            print nextGivePlayer
             putStrLn "<<<=="
 
-            draw newPlayerMap xs
+            drawEach nextPlayerMap nextMatchTable
 
 
-
-
-
-
+dropOut :: Int -> [Card] -> (Card, [Card])
+dropOut n cards =
+    let
+        ls = take n cards
+        rs = drop (n + 1) cards
+        card = cards !! n
+    in
+        (card, ls ++ rs)
 
 
 -- EOF

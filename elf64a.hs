@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+--{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-
@@ -44,12 +44,12 @@ step input = do
     (_, off, phdrs) <- except $ runGetOrFail (getPhdrs (e_phnum ehdr)) $
         BL.drop (fromIntegral $ e_phoff ehdr) input
 
-    lift $ putStrLn "-----" >> print off >> (mapM_ print $ zipWith (,) [1..] phdrs)
+    lift $ putStrLn "-----" >> print off >> mapM_ print (zip [1..] phdrs)
 
     (_, off, shdrs) <- except $ runGetOrFail (getShdrs (e_shnum ehdr)) $
         BL.drop (fromIntegral $ e_shoff ehdr) input
 
-    lift $ putStrLn "-----" >> print off >> (mapM_ print $ zipWith (,) [1..] shdrs)
+    lift $ putStrLn "-----" >> print off >> mapM_ print (zip [1..] shdrs)
 
     return 1
 
@@ -221,11 +221,11 @@ data Phdr = Phdr {
 getPhdrs :: Integral a => a -> Get [Phdr]
 getPhdrs num = do
 
-    forM [1.. (fromIntegral num)] $ \_ ->
-
+    --forM [1.. (fromIntegral num)] $ \_ ->
+    replicateM (fromIntegral num) (
         Phdr <$> getWord32host <*> getWord32host <*>
             getWord64host <*> getWord64host <*> getWord64host <*>
-            getWord64host <*> getWord64host <*> getWord64host
+            getWord64host <*> getWord64host <*> getWord64host)
 
 
 {-
@@ -260,12 +260,12 @@ data Shdr = Shdr {
 getShdrs :: Integral a => a -> Get [Shdr]
 getShdrs num = do
 
-    forM [1.. (fromIntegral num)] $ \_ ->
-
+    --forM [1.. (fromIntegral num)] $ \_ ->
+    replicateM (fromIntegral num) (
         Shdr <$> getWord32host <*> getWord32host <*>
             getWord64host <*> getWord64host <*> getWord64host <*> getWord64host <*>
             getWord32host <*> getWord32host <*>
-            getWord64host <*> getWord64host
+            getWord64host <*> getWord64host)
 
 
 -- EOF

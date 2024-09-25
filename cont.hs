@@ -17,6 +17,7 @@ steps x next = do
 data Cont r a = Cont { runCont :: (a -> r) -> r }
 
 
+returnCont :: a -> Cont r a
 returnCont x = Cont $ \f -> f x
 
 
@@ -25,13 +26,11 @@ fmapCont f m = Cont $ \c -> runCont m (c . f)
 
 
 appCont :: Cont r (a -> b) -> Cont r a -> Cont r b
-appCont ma mb = Cont $ \a -> runCont ma $ \b -> runCont mb (a . b)
+appCont ma mb = Cont $ \c -> runCont ma $ \b -> runCont mb (c . b)
 
 
 bindCont :: Cont r a -> (a -> Cont r b) -> Cont r b
-bindCont m f = Cont $ \a -> runCont m (\b -> runCont (f b) a)
-
-
+bindCont m f = Cont $ \c -> runCont m (\b -> runCont (f b) c)
 
 
 
@@ -52,8 +51,9 @@ incrCont a = Cont $ \f -> f (a + 1)
 isoddCont a = Cont $ \f -> f (odd a)
 
 
-stepsCont = do
-    a <- incrCont 1
+stepsCont :: Num a => a -> Cont r Bool
+stepsCont n = do
+    a <- incrCont n
     b <- incrCont a
     c <- incrCont b
     isoddCont c
@@ -69,7 +69,7 @@ main = do
         k = runCont ((pure (+1)) <*> (pure 1)) id
         l = runCont ((+) <$> pure 1 <*> pure 2) id
         m = runCont (return 1 >>= return . (+1)) id
-        n = runCont stepsCont id
+        n = runCont (stepsCont 1) id
 
     print y
     print z
@@ -79,7 +79,6 @@ main = do
     print n
 
     putStrLn "done."
-
 
 
 

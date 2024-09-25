@@ -182,6 +182,7 @@ getEhdr = do
     -}
 
     --ehdr <- ehdr' <$>
+
     ehdr <- Ehdr e_entry e_phoff e_shoff <$>
         getWord16host <*> getWord16host <*> getWord16host <*>
         getWord16host <*> getWord16host <*> getWord16host

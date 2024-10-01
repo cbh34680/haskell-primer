@@ -35,6 +35,7 @@ main = do
     print $ parse parser "(src)" "  1 2 ( 3 4 ) 5  "
     print $ parse parser "(src)" "  1 2 { 3 4 } 5  "
     print $ parse parser "(src)" "  1 a 3 "
+    print $ parse parser "(src)" "  1 ( 2 ( 3 { 4 5 } ) ) 6 "
 
 
 -- EOF

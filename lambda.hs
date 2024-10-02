@@ -1,15 +1,19 @@
-import Control.Monad
 import Control.Applicative
+import Control.Monad
+import Control.Monad.Except
+
+import Data.Foldable (traverse_)
 import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes)
 import Data.List ((\\), group, sort)
 import Data.List.Extra (notNull)
+
 import qualified Data.Map as Map
 import qualified Text.Parsec as P
 
 
-data Term = Var String | Function Char Term | Apply Term Term deriving (Eq, Show)
-data Stmt = Define (String, Term) | Execute Term deriving (Eq, Show)
+data Term = Var String | Function {boundVar::Char, body::Term} | Apply {func::Term, arg::Term} deriving (Eq, Show)
+data Stmt = Define (String, Term) | Eval Term deriving (Eq, Show)
 
 
 showLambda (Var cs) = cs
@@ -21,7 +25,19 @@ separator = P.oneOf " \t"
 skipSpaces = void (P.skipMany separator)
 
 
-parseIdent = P.many1 P.letter <* skipSpaces
+--parseIdent = P.many1 P.letter <* skipSpaces
+{-
+parseIdent = do
+    x <- P.letter
+    xs <- P.many (P.letter <|> P.digit)
+
+    skipSpaces
+
+    return (x:xs)
+-}
+parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
+
+
 parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
 -- parseLetter = P.letter <* skipSpaces
 
@@ -31,11 +47,13 @@ literal c = P.char c <* skipSpaces
 
 
 --parser :: P.Parsec String () Term
-parser = skipSpaces *> (catMaybes <$> parseStmt `P.sepBy` separator) <* P.eof
+--parser = skipSpaces *> (catMaybes <$> parseStmt `P.sepBy` (P.many separator)) <* P.eof
+parser = (catMaybes <$> P.many parseStmt) <* P.eof
 
 
 --parseTerm :: P.Parsec String () Term
-parseStmt = (P.try parseDefine <|> parseExecute <|> emptyLine) <* eol
+parseStmt = skipSpaces *> (P.try parseDefine <|> parseEval <|> emptyLine) <* eol
+--parseStmt = (P.try parseDefine <|> parseEval <|> emptyLine) <* eol
 
 {-
 parseDefine = do
@@ -49,7 +67,7 @@ parseDefine = do
 parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseApply
 
 
-parseExecute = Just . Execute <$> parseApply
+parseEval = Just . Eval <$> parseApply
 
 
 -- emptyLine = skipSpaces *> return Nothing
@@ -90,31 +108,42 @@ parseFunction = do
 
     let (x:xs) = reverse args
 
-    return $ foldl (\acc c -> Function c acc) (Function x apply) xs
+    --return $ foldl (\acc c -> Function c acc) (Function x apply) xs
+    return $ foldl (flip Function) (Function x apply) xs
 
 
 parseVar = Var <$> parseIdent
 
 
 executeStmts stmts = do
-    let execs = filter isExecute stmts
+    let execs = filter isEval stmts
     let defs = map (\(Define t) -> t) $ stmts \\ execs
 
     let dups = map (!! 0) . filter ((> 1) . length) . group . sort $ map fst defs
+
     when (notNull dups) (error (mconcat ["duplicate terms (", show dups, ")"]))
     --guard (notnull dups)
 
     --print $ Map.fromList defs
     --print execs
 
-    traverse (putStrLn . ((\k v -> k ++ "=" ++ v) <$> fst <*> showLambda . snd)) defs
-
+    putStrLn "---------- haskell ----------"
+    traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> show . snd)) defs
+    putStrLn ""
+    traverse_ print execs
+    putStrLn ""
+    putStrLn "---------- defines ----------"
+    traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showLambda . snd)) defs
+    putStrLn ""
+    putStrLn "---------- execute ----------"
+    print execs
+    putStrLn ""
     putStrLn "execute!"
 
-
-isExecute :: Stmt -> Bool
-isExecute (Execute _) = True
-isExecute _ = False
+    where
+        isEval :: Stmt -> Bool
+        isEval (Eval _) = True
+        isEval _ = False
 
 
 main = do
@@ -133,15 +162,13 @@ main = do
 
 
 input = "\
-\ aa = \\f.\\g.\\x. f (g x)  \n\
-\ ab = \\fgx. f (g x)  \n\
-\ ac = \\f g x. f (g x)  \n\
-\ ad = \\f.(\\g.(\\x. f (g x)))  \n\
 \  \n\
-\ bb = (aa f g)     \n\
-\ cc = (aa f g)     \n\
+\  succ  = \\n. \\f. \\x. f (n f x)   \n\
+\  c0    = \\f. \\x. x                \n\
+\  c1    = succ zero                  \n\
+\  c2    = succ (succ zero)           \n\
 \  \n\
-\ (aa f g)     \n\
+\  c1    \n\
 \"
 
 

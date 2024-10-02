@@ -1,5 +1,6 @@
 import Control.Monad
 import Control.Applicative
+import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes)
 import Data.List ((\\), group, sort)
 import Data.List.Extra (notNull)
@@ -7,20 +8,22 @@ import qualified Data.Map as Map
 import qualified Text.Parsec as P
 
 
-data Term = Var String | Function String Term | Apply Term Term deriving (Eq)
+data Term = Var String | Function Char Term | Apply Term Term deriving (Eq, Show)
 data Stmt = Define (String, Term) | Execute Term deriving (Eq, Show)
 
 
-instance Show Term where
-    show (Var cs) = cs
-    show (Function cs term) = mconcat ["(\\", cs, ".", show term, ")"]
-    show (Apply t1 t2) = mconcat ["(", show t1, " ", show t2, ")"]
+showLambda (Var cs) = cs
+showLambda (Function c term) = mconcat ["(\\", [c], ".", showLambda term, ")"]
+showLambda (Apply t1 t2) = mconcat ["(", showLambda t1, " ", showLambda t2, ")"]
 
 
 separator = P.oneOf " \t"
 skipSpaces = void (P.skipMany separator)
 
+
 parseIdent = P.many1 P.letter <* skipSpaces
+parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
+-- parseLetter = P.letter <* skipSpaces
 
 eol = P.char '\n'
 
@@ -49,10 +52,8 @@ parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> pars
 parseExecute = Just . Execute <$> parseApply
 
 
-emptyLine = do
-    skipSpaces
-
-    return Nothing
+-- emptyLine = skipSpaces *> return Nothing
+emptyLine = Nothing <$ skipSpaces
 
 
 parseApply = do
@@ -67,14 +68,33 @@ parseApply = do
             return term
 
 
-parseTerm = nested <|> function <|> var
+parseTerm = parseNested <|> parseFunction <|> parseVar
 
 
-nested = literal '(' *> parseApply <* literal ')'
+parseNested = literal '(' *> parseApply <* literal ')'
 
-function = Function <$> (literal '\\' *> parseIdent <* literal '.') <*> parseApply
+--parseFunction = Function <$> (literal '\\' *> parseLetter <* literal '.') <*> parseApply
+{-
+parseFunction = do
+    literal '\\'
+    arg <- parseLetter
+    literal '.'
 
-var = Var <$> parseIdent
+    Function [arg] <$> parseApply
+-}
+parseFunction = do
+    literal '\\'
+    args <- filter (not . isSpace) <$> parseArgs
+    literal '.'
+    apply <- parseApply
+
+    let (x:xs) = reverse args
+
+    return $ foldl (\acc c -> Function c acc) (Function x apply) xs
+
+
+parseVar = Var <$> parseIdent
+
 
 executeStmts stmts = do
     let execs = filter isExecute stmts
@@ -84,8 +104,10 @@ executeStmts stmts = do
     when (notNull dups) (error (mconcat ["duplicate terms (", show dups, ")"]))
     --guard (notnull dups)
 
-    print $ Map.fromList defs
-    print execs
+    --print $ Map.fromList defs
+    --print execs
+
+    traverse (putStrLn . ((\k v -> k ++ "=" ++ v) <$> fst <*> showLambda . snd)) defs
 
     putStrLn "execute!"
 
@@ -104,7 +126,7 @@ main = do
 
     case P.parse parser "(src)" input of
         Right stmts -> executeStmts stmts
-        _ -> putStrLn "parse error"
+        Left err -> putStrLn "[parse error]" >> print err
 
 
     putStrLn "done."
@@ -112,6 +134,9 @@ main = do
 
 input = "\
 \ aa = \\f.\\g.\\x. f (g x)  \n\
+\ ab = \\fgx. f (g x)  \n\
+\ ac = \\f g x. f (g x)  \n\
+\ ad = \\f.(\\g.(\\x. f (g x)))  \n\
 \  \n\
 \ bb = (aa f g)     \n\
 \ cc = (aa f g)     \n\

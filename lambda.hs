@@ -13,6 +13,7 @@ import Debug.Trace
 --import Control.Monad.Trans.Class (lift)
 
 import Data.Foldable (traverse_)
+import Data.Functor (($>))
 import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes, isJust, fromJust)
 import Data.List ((\\), group, sort, intersperse)
@@ -106,11 +107,15 @@ parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> pars
 parseExpr = Just . Expr <$> parseApply
 
 
+{-
 commentLine = do
     P.string "--"
     --many (P.noneOf "\n")
     many (P.noneOf "\n")
     return Nothing
+-}
+--commentLine = P.string "--" *> many (P.noneOf "\n") *> return Nothing
+commentLine = (P.string "--" *> many (P.noneOf "\n")) $> Nothing
 
 
 -- emptyLine = skipSpaces *> return Nothing
@@ -208,7 +213,8 @@ executeStmts stmts = do
     -- print expr
     -- print db
     let extExprs = map (\(Expr x) -> extract 0 db x) exprs
-    traverse_ (putStrLn . show) extExprs
+    --traverse_ (putStrLn . show) extExprs
+    traverse_ print extExprs
 
     putStrLn ""
     mapM_ (putStrLn . showLambda) extExprs
@@ -278,7 +284,7 @@ extract lv db org@(Label key) = do
 
 --mkdbg lv t xs = (indent lv) ++ (mconcat . (intersperse "|") $ ["|", t] ++ xs ++ ["|"])
 
-mkdbg lv t = (++) (indent lv) . mconcat . (intersperse "|") . (++) ["|", t] . flip (++) ["|"]
+mkdbg lv t = (++) (indent lv) . mconcat . intersperse "|" . (++) ["|", t] . flip (++) ["|"]
 
 indent :: Int -> String
 indent n = replicate (n * 2) ' '

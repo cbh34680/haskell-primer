@@ -50,8 +50,8 @@ mult = \m. \n. \f. m (n f)
 --(\fab. f a b) plus c1 c2
 --(\ab. plus a b) c1 c2
 
---succ c0
-plus c1 c2
+succ c0
+--plus c1 c2
 
 
 -- EOF

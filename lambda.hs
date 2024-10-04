@@ -553,7 +553,7 @@ main = do
 
 #endif
 
-    input <- readFile "a.lmd"
+    input <- readFile "example.lmd"
 
     case P.parse parser "(src)" input of
         Right stmts -> executeStmts stmts

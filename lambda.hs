@@ -31,14 +31,12 @@ data Term =
     Label String |
     Bound Char |
     Var String |
-    Function {bound'::Char, body'::Term} |
-    Apply {func'::Term, arg'::Term} deriving (Eq, Show, Generic)
+    Function {mBbound::Char, mBbody::Term} |
+    Apply {mFunc::Term, mAarg::Term} deriving (Eq, Show, Generic)
 
 instance NFData Term
 
 data Stmt = Define (String, Term) | Expr Term deriving (Eq, Show)
-
-type TermStack = [(String, Term)]
 
 type Indent = Int
 
@@ -230,171 +228,8 @@ executeStmts stmts = do
     traverse_ (putStrLn . showHaskell) extExprs
     putStrLn ""
 
-    {-
-    putStrLn "---------- reduction ----------"
-
-    let redExprs = map (reduction 0 []) extExprs
-    let !_ = redExprs `deepseq` ()
-
-    putStrLn ""
-
-    traverse_ print redExprs
-    putStrLn ""
-    traverse_ (putStrLn . showLambda) redExprs
-    putStrLn ""
-    traverse_ (putStrLn . showHaskell) redExprs
-    putStrLn ""
-
-    putStrLn "---------- check ----------"
-    --print $ map diveCalc extExprs
-    --print $ map diveCalc redExprs
-
-    putStrLn "!!! aa !!!"
-    let aa = map (reduction 0 []) redExprs
-    let !_ = aa `deepseq` ()
-    putStrLn ""
-    traverse_ print aa
-    putStrLn ""
-    traverse_ (putStrLn . showLambda) aa
-    putStrLn ""
-    traverse_ (putStrLn . showHaskell) aa
-    putStrLn ""
-
-    putStrLn "!!! bb !!!"
-    let bb = map (reduction 0 []) aa
-    let !_ = bb `deepseq` ()
-    putStrLn ""
-    traverse_ print bb
-    putStrLn ""
-    traverse_ (putStrLn . showLambda) bb
-    putStrLn ""
-    traverse_ (putStrLn . showHaskell) bb
-    putStrLn ""
-
-    putStrLn "!!! cc !!!"
-    let cc = map (reduction 0 []) bb
-    let !_ = cc `deepseq` ()
-    putStrLn ""
-    traverse_ print cc
-    putStrLn ""
-    traverse_ (putStrLn . showLambda) cc
-    putStrLn ""
-    traverse_ (putStrLn . showHaskell) cc
-    putStrLn ""
-
-    putStrLn "!!! dd !!!"
-    let dd = map (reduction 0 []) cc
-    let !_ = dd `deepseq` ()
-    putStrLn ""
-    traverse_ print dd
-    putStrLn ""
-    traverse_ (putStrLn . showLambda) dd
-    putStrLn ""
-    traverse_ (putStrLn . showHaskell) dd
-    putStrLn ""
-
-    -}
-
     putStrLn "---------- complete ----------"
     putStrLn ""
-
-
-
--- #--------------------------------------------------------------------------
--- #
--- #        r e d u c t i o n
--- #
--- #--------------------------------------------------------------------------
-
-hasChild :: Term -> Bool
-hasChild (Function _ _) = True
-hasChild (Apply _ _) = True
-hasChild _ = False
-
-
-deleteFirst :: Eq a => a -> [(a,b)] -> [(a,b)]
-
---deleteFirst _ = id
-
-deleteFirst x [] = []
-deleteFirst x (y@(k,_):ys)
-    | x == k = ys
-    | otherwise = y: deleteFirst x ys
-
-
-reduction :: Indent -> TermStack -> Term -> Term
-
-reduction lv db (Apply lt@(Function c term) rt) = do
-    --let !_ = trace (mkdbg lv "ApF" [ "<" ,[c],showType lt ++ ":" ++ showLambda lt ,showType rt ++ ":" ++ showLambda rt ]) 1
-
-    let db' = (([c], rt):db)
-
-    reduction (lv + 1) db' term
-
-
-reduction lv db org@(Bound c) = do
-    --let !_ = trace (mkdbg lv "Bou" [ "<" ,[c] ]) 1
-
-    case lookup [c] db of
-        Nothing -> org
-
-        {-
-            "iszero c0" のときに無限ループする
-        -}
-        --Just x -> reduction (lv + 1) db x
-
-        {-
-            引数リストから削除 ... 影響は ?
-        Just x -> do
-                let db' = deleteFirst [c] db
-                reduction (lv + 1) db' x
-        -}
-
-        {-
-            "(\f.\x. f x) (\y.y) z" のときに (Label "z') ではなく (Bound 'x') となってしまう
-        -}
-        Just x -> x
-
-        {-
-            折衷案
-        Just x -> case hasChild x of
-                    True -> x
-                    _    -> reduction (lv + 1) db x
-        -}
-
-
-#if defined(NOT_DIVE)
-
-reduction lv db (Apply lt rt) = do
-    let !_ = trace (mkdbg lv "App" [ "<" ,showType lt, ":", showLambda lt ,showType rt, ":", showLambda rt ]) 1
-
-    let lt' = reduction (lv + 1) db lt
-    let rt' = reduction (lv + 1) db rt
-
-    Apply lt' rt'
-
-
-reduction lv db (Function c term) = do
-    let !_ = trace (mkdbg lv "Fun" [ "<" ,[c] ,showType term, ":", showLambda term ]) 1
-
-    let term' = reduction (lv + 1) db term
-
-    Function c term'
-
-
-reduction lv db org = do
-    let !_ = trace (mkdbg lv "Non" [ "<" ,showType org, ":", showLambda org ]) 1
-
-    org
-
-#else
-
-reduction lv db term = do
-    --let !_ = trace (mkdbg lv "Via" [ "<" ,showType term, ":", showLambda term ]) 1
-
-    dive reduction lv db term
-
-#endif
 
 
 -- #--------------------------------------------------------------------------
@@ -403,22 +238,14 @@ reduction lv db term = do
 -- #
 -- #--------------------------------------------------------------------------
 
-extract :: Indent -> TermStack -> Term -> Term
+extract :: Indent -> [(String, Term)] -> Term -> Term
 
 extract lv db (Var key) = do
     --let !_ = trace (mkdbg lv "Var" [ "<" ,key ]) 1
 
     let term = case lookup key db of
-                    Just x  -> extract (lv + 1) db x
-
-                    {-
-                        引数リストから削除 ... 影響は ?
-                    Just x  -> do
-                                let db' = deleteFirst key db
-                                extract (lv + 1) db' x
-                    -}
-
-                    Nothing -> Label key
+                    Just x -> extract (lv + 1) db x
+                    _      -> Label key
 
     --let !_ = trace (mkdbg lv "Var" [ "<" ,showType term ++ ":" ++ showLambda term ]) 1
 
@@ -444,8 +271,6 @@ extract lv db org@(Label key) = do
     org
 
 
-#if defined(NOT_DIVE)
-
 extract lv db (Apply lt rt) = do
     --let !_ = trace (mkdbg lv "App" [ "<" ,showType lt ++ ":" ++ showLambda lt ,showType rt ++ ":" ++ showLambda rt ]) 1
 
@@ -461,68 +286,6 @@ extract lv db org@(Bound c) = do
     --let !_ = trace (mkdbg lv "Bou" [ ">" ,[c] ]) 1
 
     org
-
-# else
-
-extract lv db term = do
-    --let !_ = trace (mkdbg lv "Via" [ "<" ,showType term, ":", showLambda term ]) 1
-
-    dive extract lv db term
-
-#endif
-
-
--- #--------------------------------------------------------------------------
--- #
--- #        d i v e   c a l c
--- #
--- #--------------------------------------------------------------------------
-
-diveCalc :: Term -> Int
-
-diveCalc (Apply lt@(Function c term) rt) = (diveCalc lt) + (diveCalc rt) + 1
-
-diveCalc (Apply lt rt) = (diveCalc lt) + (diveCalc rt)
-
-diveCalc (Function c term) = diveCalc term
-
-diveCalc term = 0
-
-
--- #--------------------------------------------------------------------------
--- #
--- #        d i v e
--- #
--- #--------------------------------------------------------------------------
-
-#if !defined(NOT_DIVE)
-
-dive :: (Indent -> TermStack -> Term -> Term) -> Indent -> TermStack -> Term -> Term
-
-dive next lv db (Apply lt rt) = do
-    --let !_ = trace (mkdbg lv "App" [ "<" ,showType lt, ":", showLambda lt ,showType rt, ":", showLambda rt ]) 1
-
-    let lt' = next (lv + 1) db lt
-    let rt' = next (lv + 1) db rt
-
-    Apply lt' rt'
-
-
-dive next lv db (Function c term) = do
-    --let !_ = trace (mkdbg lv "Fun" [ "<" ,[c] ,showType term, ":", showLambda term ]) 1
-
-    let term' = next (lv + 1) db term
-
-    Function c term'
-
-
-dive next lv db term = do
-    --let !_ = trace (mkdbg lv "Non" [ "<" ,showType org, ":", showLambda org ]) 1
-
-    term
-
-#endif
-
 
 -- #--------------------------------------------------------------------------
 -- #
@@ -545,14 +308,6 @@ main = do
     -}
     --P.parse parser "(src)" input
 
-#if defined(NOT_DIVE)
-    putStrLn "no dive"
-
-#else
-    putStrLn "use dive"
-
-#endif
-
     input <- readFile "example.lmd"
 
     case P.parse parser "(src)" input of
@@ -561,23 +316,6 @@ main = do
 
 
     putStrLn "done."
-
-
-{-
-input = "\
-\  (\\f. f) (\\x. x)  \n\
-\"
-
-input' = "\
-\  \n\
-\  succ  = \\n. \\f. \\x. f (n f x)   \n\
-\  c0    = \\f. \\x. x                \n\
-\  c1    = succ c0                    \n\
-\  c2    = succ (succ c0)             \n\
-\  \n\
-\  c1    \n\
-\"
--}
 
 
 -- EOF

@@ -10,7 +10,6 @@ import Debug.Trace (trace)
 import Text.Show.Pretty (ppShow)
 
 --
-
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State as MS
@@ -59,7 +58,7 @@ type Indent = Int
 -- #--------------------------------------------------------------------------
 
 showPLambda (PApply t1 t2) = mconcat ["(", showPLambda t1, " ", showPLambda t2, ")"]
-showPLambda (PFunction c term) = mconcat ["(\\", [c], ".", showPLambda term, ")"]
+showPLambda (PFunction c term) = mconcat ["(λ", [c], ".", showPLambda term, ")"]
 showPLambda (PVar cs) = cs
 
 showPType (PApply _ _) = "A"
@@ -71,7 +70,7 @@ showPHaskell (PFunction c term) = mconcat ["(\\", [c], " -> ", showPHaskell term
 showPHaskell x = showPLambda x
 
 --
-showELambda (EFunction (Bound cs) term) = mconcat ["(\\", boundName cs, ".", showELambda term, ")"]
+showELambda (EFunction (Bound cs) term) = mconcat ["(λ", boundName cs, ".", showELambda term, ")"]
 showELambda (EApply t1 t2) = mconcat ["(", showELambda t1, " ", showELambda t2, ")"]
 showELambda (EBound (Bound cs)) = boundName cs
 showELambda (ELabel cs) = cs
@@ -85,7 +84,8 @@ showEHaskell (EFunction (Bound cs) term) = mconcat ["(\\", boundName cs, " -> ",
 showEHaskell (EApply t1 t2) = mconcat ["(", showEHaskell t1, " ", showEHaskell t2, ")"]
 showEHaskell x = showELambda x
 
-boundName = fst . break (== '#')
+--boundName = fst . break (== '#')
+boundName = takeWhile (/= '#')
 
 --mkdbg lv t xs = (indentStr lv) ++ (mconcat . (intersperse "|") $ ["|", t] ++ xs ++ ["|"])
 
@@ -177,51 +177,75 @@ executeStmts stmts = do
         isExpr (Expr _) = True
         isExpr _ = False
 
+    -- 入力データのうち、広域定義ではないもの ... 評価対象
     let exprs = filter isExpr stmts
+
+    -- 広域定義 "^a = b"
     let defs = map (\(Define t) -> t) $ stmts \\ exprs
 
+    -- 重複する広域定義名は NG
     let dups = map (!! 0) . filter ((> 1) . length) . group . sort $ map fst defs
     when (notNull dups) (error (mconcat ["duplicate terms (", show dups, ")"]))
 
+    let exprs' = map (\(Expr x) -> x) exprs
+
+    putStrLn "---------- lambda ----------"
+    traverse_ (putStrLn . showPLambda) exprs'
     putStrLn "---------- haskell ----------"
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> show . snd)) defs
     putStrLn ""
-    traverse_ print exprs
+    traverse_ print exprs'
     putStrLn ""
     putStrLn "---------- define ----------"
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showPLambda . snd)) defs
     putStrLn ""
     putStrLn "---------- expr ----------"
-    putStrLn . ppShow $ exprs
+    putStrLn . ppShow $ exprs'
     putStrLn ""
 
     putStrLn "---------- alpha ----------"
 
-    let extExprs = map (\(Expr x) -> evalState(alpha 0 defs [] x) 0) exprs
-    let !_ = extExprs `deepseq` ()
 
-    traverse_ (putStrLn . ppShow) $ zip [1..] extExprs
+    --let extExprs = map (\(Expr x) -> evalState (alpha 0 defs [] x) 0) exprs
+    let aExprs = map (\x -> evalState (alpha 0 defs [] x) 0) exprs'
+    let !_ = aExprs `deepseq` ()
+
+    traverse_ (putStrLn . ppShow) $ zip [1..] aExprs
 
     putStrLn ""
-    traverse_ (putStrLn . showELambda) extExprs
+    traverse_ (putStrLn . showELambda) aExprs
     putStrLn ""
-    traverse_ (putStrLn . showEHaskell) extExprs
+    traverse_ (putStrLn . showEHaskell) aExprs
     putStrLn ""
 
     putStrLn "---------- beta ----------"
 
-    let redExprs = map (beta 0 [] []) extExprs
-    let !_ = redExprs `deepseq` ()
+    let bExprs = map (beta 0 [] []) aExprs
+    let !_ = bExprs `deepseq` ()
 
-    traverse_ (putStrLn . ppShow) redExprs
+    traverse_ (putStrLn . ppShow) bExprs
 
     putStrLn ""
-    traverse_ (putStrLn . showELambda) redExprs
+    traverse_ (putStrLn . showELambda) bExprs
     putStrLn ""
-    traverse_ (putStrLn . showEHaskell) redExprs
+    traverse_ (putStrLn . showEHaskell) bExprs
     putStrLn ""
 
     putStrLn "---------- complete ----------"
+    putStrLn "[INPUT]"
+    putStrLn "* lambda"
+    traverse_ (putStrLn . showPLambda) exprs'
+    putStrLn "* haskell"
+    traverse_ (putStrLn . showPHaskell) exprs'
+    putStrLn ""
+    putStrLn "[OUTPUT]"
+    putStrLn "* lambda"
+    traverse_ (putStrLn . showELambda) bExprs
+    putStrLn "* haskell"
+    traverse_ (putStrLn . showEHaskell) bExprs
+    putStrLn ""
+    putStrLn "[TEST]"
+    traverse_ (\x -> putStrLn $ showEHaskell x ++ " (+1) 0") bExprs
     putStrLn ""
 
 
@@ -233,37 +257,43 @@ executeStmts stmts = do
 
 beta :: Indent -> [ETerm] -> [(Bound, ETerm)] -> ETerm -> ETerm
 
-beta lv args db org@(EApply lt rt) = do
+beta lv args db (EApply lt rt) = do
     --let !_ = trace (mkdbg lv "App" [ "<" ,showEType lt ++ ":" ++ showELambda lt ,showEType rt ++ ":" ++ showELambda rt ]) 1
 
-    let args' = (rt:args)
+    -- 右を引数として登録
+    let args' = rt:args
 
+    -- 左を簡約
     beta (lv + 1) args' db lt
 
 
-
-beta lv args db org@(EFunction eb term) = do
+beta lv args db (EFunction eb term) = do
     --let !_ = trace (mkdbg lv "Fun" [ "<" ,show eb ,showEType term ++ ":" ++ showELambda term ]) 1
 
     if null args then do
         --let !_ = trace (mconcat [replicate 40 ' ', "no args"]) 1
         --let !_ = trace (mconcat [replicate 40 ' ', "* db: ", ppShow db]) 1
 
-        let term' = beta_r (lv + 1) db term
-        --let term' = beta (lv + 1) args db term
+        -- 残りを簡約
+        let term' = betaR (lv + 1) db term
+
         EFunction eb term'
-        --org
 
         else do
+            -- 引数を消費
             let (arg':args') = args
-            let db' = ((eb, arg'):db)
 
+            -- 仮引数マップに登録
+                db' = (eb, arg'):db
+
+            -- 本体を簡約
             beta (lv + 1) args' db' term
 
 
-beta lv args db org@(EBound eb) = do
+beta lv args db (EBound eb) = do
     --let !_ = trace (mkdbg lv "Bou" [ ">" ,show eb ]) 1
 
+    -- 仮引数マップを参照
     case lookup eb db of
         Just x -> beta (lv + 1) args db x
         _ -> error $ mconcat ["Not Founc:", show eb]
@@ -276,38 +306,41 @@ beta lv args db org@(ELabel key) = do
 
     org
 
--- #--------------------------------------------------------------------------
 
-beta_r :: Indent -> [(Bound, ETerm)] -> ETerm -> ETerm
+--
+-- 引数が全て消費された状況で、関数本体にある参照を簡約
+--
 
-beta_r lv db org@(EApply lt rt) = do
+betaR :: Indent -> [(Bound, ETerm)] -> ETerm -> ETerm
+
+betaR lv db (EApply lt rt) = do
     --let !_ = trace (mkdbg lv "App" [ "<" ,showEType lt ++ ":" ++ showELambda lt ,showEType rt ++ ":" ++ showELambda rt ]) 1
 
-    let lt' = beta_r (lv + 1) db lt
-    let rt' = beta_r (lv + 1) db rt
+    let lt' = betaR (lv + 1) db lt
+    let rt' = betaR (lv + 1) db rt
 
     EApply lt' rt'
 
 
 
-beta_r lv db org@(EFunction eb term) = do
+betaR lv db (EFunction eb term) = do
     --let !_ = trace (mkdbg lv "Fun" [ "<" ,show eb ,showEType term ++ ":" ++ showELambda term ]) 1
 
-    let term' = beta_r (lv + 1) db term
+    let term' = betaR (lv + 1) db term
     EFunction eb term'
 
 
-beta_r lv db org@(EBound eb) = do
+betaR lv db org@(EBound eb) = do
     --let !_ = trace (mkdbg lv "Bou" [ ">" ,show eb ]) 1
 
     case lookup eb db of
-        Just x -> beta_r (lv + 1) db x
+        Just x -> betaR (lv + 1) db x
         _ -> do
             --let !_ = trace (mconcat ["Not Founc:", show eb]) 1
             org
 
 
-beta_r lv db org = do
+betaR lv db org = do
     --let !_ = trace (mkdbg lv "Non" [ ">" ,show org ]) 1
 
     let !_ = error "Invalid Term Type !!"
@@ -335,17 +368,20 @@ alpha lv pdb edb (PApply lt rt) = do
 
 
 alpha lv pdb edb (PFunction c term) = do
+    -- α-変換に必要となる一意の ID を生成
     newId <- genId
 
-    let eb = Bound $ (c:'#':show newId)
+    -- 束縛名は "元の変数名" + "#999"
+    let eb = Bound (c:'#':show newId)
 
-    let edb' = (([c], eb):edb)
+    let edb' = ([c], eb):edb
     term' <- alpha (lv + 1) pdb edb' term
 
     return $ EFunction eb term'
 
 
 alpha lv pdb edb (PVar key) = do
+    -- 束縛名と広域定義から参照先を見つける
     case lookup key edb of
         Just x -> return $ EBound x
         _ ->

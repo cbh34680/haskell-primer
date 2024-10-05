@@ -5,17 +5,18 @@
 
 -- :set -DNOT_DIVE
 
+import Debug.Trace (trace)
+--import Text.Pretty.Simple (pPrint)
+import Text.Show.Pretty (ppShow)
+
+--
+
 import Control.Applicative
 import Control.Monad
-import Debug.Trace
+import Control.Monad.State as MS
 
 import GHC.Generics (Generic)
 import Control.DeepSeq
-
---import Control.Monad.Trans.Maybe
---import Control.Monad.Except
---import Control.Monad.Reader
---import Control.Monad.Trans.Class (lift)
 
 import Data.Foldable (traverse_)
 import Data.Function ((&))
@@ -23,119 +24,119 @@ import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes, isJust, fromJust)
 import Data.List ((\\), group, sort, intersperse)
 import Data.List.Extra (notNull)
+--import Data.List.Split (splitOn)
 
 import qualified Text.Parsec as P
 
 
-data Term =
-    Label String |
-    Bound Char |
-    Var String |
-    Function {mBbound::Char, mBbody::Term} |
-    Apply {mFunc::Term, mAarg::Term} deriving (Eq, Show, Generic)
+data PTerm =
+    PApply {pFunc'::PTerm, pAarg'::PTerm} |
+    PFunction {pBound'::Char, pBody'::PTerm} |
+    PVar String
+    deriving (Eq, Show, Generic)
 
-instance NFData Term
+newtype Bound = Bound String deriving (Eq, Show, Generic)
 
-data Stmt = Define (String, Term) | Expr Term deriving (Eq, Show)
+data ETerm =
+    EApply {eFunc'::ETerm, eAarg'::ETerm} |
+    EFunction {eBound'::Bound, eBody'::ETerm} |
+    EBound Bound |
+    ELabel String
+    deriving (Eq, Show, Generic)
 
+instance NFData PTerm
+instance NFData ETerm
+instance NFData Bound
+
+data Stmt = Define (String, PTerm) | Expr PTerm deriving (Eq, Show)
 type Indent = Int
 
-showLambda (Function c term) = mconcat ["(\\", [c], ".", showLambda term, ")"]
-showLambda (Apply t1 t2) = mconcat ["(", showLambda t1, " ", showLambda t2, ")"]
-showLambda (Var cs) = cs
-showLambda (Label cs) = cs
-showLambda (Bound c) = [c]
 
-showType (Var _) = "V"
-showType (Label _) = "L"
-showType (Bound _) = "B"
-showType (Function _ _) = "F"
-showType (Apply _ _) = "A"
+-- #--------------------------------------------------------------------------
+-- #
+-- #        u t i l
+-- #
+-- #--------------------------------------------------------------------------
 
-{-
-showHaskell (Label cs) = cs
-showHaskell (Bound c) = [c]
-showHaskell (Var cs) = cs
--}
-showHaskell (Function c term) = mconcat ["(\\", [c], " -> ", showHaskell term, ")"]
-showHaskell (Apply t1 t2) = mconcat ["(", showHaskell t1, " ", showHaskell t2, ")"]
-showHaskell x = showLambda x
+showPLambda (PApply t1 t2) = mconcat ["(", showPLambda t1, " ", showPLambda t2, ")"]
+showPLambda (PFunction c term) = mconcat ["(\\", [c], ".", showPLambda term, ")"]
+showPLambda (PVar cs) = cs
 
+showPType (PApply _ _) = "A"
+showPType (PFunction _ _) = "F"
+showPType (PVar _) = "V"
+
+showPHaskell (PApply t1 t2) = mconcat ["(", showPHaskell t1, " ", showPHaskell t2, ")"]
+showPHaskell (PFunction c term) = mconcat ["(\\", [c], " -> ", showPHaskell term, ")"]
+showPHaskell x = showPLambda x
+
+--
+showELambda (EFunction (Bound cs) term) = mconcat ["(\\", boundName cs, ".", showELambda term, ")"]
+showELambda (EApply t1 t2) = mconcat ["(", showELambda t1, " ", showELambda t2, ")"]
+showELambda (EBound (Bound cs)) = boundName cs
+showELambda (ELabel cs) = cs
+
+showEType (EApply _ _) = "A"
+showEType (EFunction _ _) = "F"
+showEType (EBound _) = "B"
+showEType (ELabel _) = "L"
+
+showEHaskell (EFunction (Bound cs) term) = mconcat ["(\\", boundName cs, " -> ", showEHaskell term, ")"]
+showEHaskell (EApply t1 t2) = mconcat ["(", showEHaskell t1, " ", showEHaskell t2, ")"]
+showEHaskell x = showELambda x
+
+boundName = fst . break (== '#')
+
+--mkdbg lv t xs = (indentStr lv) ++ (mconcat . (intersperse "|") $ ["|", t] ++ xs ++ ["|"])
+
+mkdbg lv t = (++) (indentStr lv) . mconcat . intersperse "|" . (++) ["|", t] . flip (++) ["|"]
+
+indentStr :: Indent -> String
+indentStr n = replicate (n * 2) ' '
+
+
+-- #--------------------------------------------------------------------------
+-- #
+-- #        p a r s e
+-- #
+-- #--------------------------------------------------------------------------
+--
+eol = P.char '\n'
 
 separator = P.oneOf " \t"
+
 skipSpaces = void (P.skipMany separator)
-
-
---parseIdent = P.many1 P.letter <* skipSpaces
-{-
-parseIdent = do
-    x <- P.letter
-    xs <- P.many (P.letter <|> P.digit)
-
-    skipSpaces
-
-    return (x:xs)
--}
-parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
-
-
-parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
--- parseLetter = P.letter <* skipSpaces
-
-eol = P.char '\n'
 
 literal c = P.char c <* skipSpaces
 
-
---parser :: P.Parsec String () Term
---parser = skipSpaces *> (catMaybes <$> parseStmt `P.sepBy` (P.many separator)) <* P.eof
+--
 parser = (catMaybes <$> P.many parseStmt) <* P.eof
 
-
---parseTerm :: P.Parsec String () Term
 parseStmt = skipSpaces *>
-    (P.try parseDefine <|> commentLine <|> parseExpr <|> emptyLine) <* eol
+    (P.try parseDefine <|> parseComment <|> parseExpr <|> parseEmpty) <* eol
 
---parseStmt = (P.try parseDefine <|> parseExpr <|> emptyLine) <* eol
+--
+parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseTermOrApply
 
-{-
-parseDefine = do
-    ident <- parseIdent
-    literal '='
-    apply <- parseApply
+parseComment = Nothing <$ (P.string "--" *> many (P.noneOf "\n"))
 
-    return $ Just $ Define (ident, apply)
--}
---parseDefine = Just . Define <$> ((,) <$> (parseIdent <* literal '=') <*> parseApply)
-parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseApply
+parseExpr = Just . Expr <$> parseTermOrApply
 
+parseEmpty = Nothing <$ skipSpaces
 
-parseExpr = Just . Expr <$> parseApply
+--
+parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
 
+parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
 
-{-
-commentLine = do
-    P.string "--"
-    --many (P.noneOf "\n")
-    many (P.noneOf "\n")
-    return Nothing
--}
---commentLine = P.string "--" *> many (P.noneOf "\n") *> return Nothing
---commentLine = (P.string "--" *> many (P.noneOf "\n")) $> Nothing
-commentLine = Nothing <$ (P.string "--" *> many (P.noneOf "\n"))
-
-
--- emptyLine = skipSpaces *> return Nothing
-emptyLine = Nothing <$ skipSpaces
-
-
-parseApply = do
+--
+parseTermOrApply = do
     term <- parseTerm
 
     do
         terms <- P.many1 parseTerm
-        --return $ foldl (\ls x -> Apply ls x) term terms
-        return $ foldl Apply term terms
+
+        return $ foldl PApply term terms
 
         <|> do
             return term
@@ -144,44 +145,43 @@ parseApply = do
 parseTerm = parseNested <|> parseFunction <|> parseVar
 
 
-parseNested = literal '(' *> parseApply <* literal ')'
+--
+parseNested = literal '(' *> parseTermOrApply <* literal ')'
 
---parseFunction = Function <$> (literal '\\' *> parseLetter <* literal '.') <*> parseApply
-{-
 parseFunction = do
-    literal '\\'
-    cs <- parseLetter
-    literal '.'
+    --literal '\\'
+    --P.string "\\" <|> P.string "λ"
+    P.oneOf "\\λ" <* skipSpaces
 
-    Function [cs] <$> parseApply
--}
-parseFunction = do
-    literal '\\'
     cs <- filter (not . isSpace) <$> parseArgs
     literal '.'
-    apply <- parseApply
+    apply <- parseTermOrApply
 
     let (x:xs) = reverse cs
 
     --return $ foldl (\acc c -> Function c acc) (Function x apply) xs
-    return $ foldl (flip Function) (Function x apply) xs
+    return $ foldl (flip PFunction) (PFunction x apply) xs
 
 
-parseVar = Var <$> parseIdent
+parseVar = PVar <$> parseIdent
 
-isExpr :: Stmt -> Bool
-isExpr (Expr _) = True
-isExpr _ = False
+
+-- #--------------------------------------------------------------------------
+-- #
+-- #        e x e c u t e
+-- #
+-- #--------------------------------------------------------------------------
 
 executeStmts stmts = do
+    let isExpr :: Stmt -> Bool
+        isExpr (Expr _) = True
+        isExpr _ = False
+
     let exprs = filter isExpr stmts
     let defs = map (\(Define t) -> t) $ stmts \\ exprs
 
     let dups = map (!! 0) . filter ((> 1) . length) . group . sort $ map fst defs
     when (notNull dups) (error (mconcat ["duplicate terms (", show dups, ")"]))
-    --guard (notnull dups)
-
-    --print exprs
 
     putStrLn "---------- haskell ----------"
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> show . snd)) defs
@@ -189,43 +189,36 @@ executeStmts stmts = do
     traverse_ print exprs
     putStrLn ""
     putStrLn "---------- define ----------"
-    traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showLambda . snd)) defs
+    traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showPLambda . snd)) defs
     putStrLn ""
     putStrLn "---------- expr ----------"
-    print exprs
+    putStrLn . ppShow $ exprs
     putStrLn ""
-    putStrLn "---------- extract ----------"
 
-    {-
-        Var により参照されている Term に置き換える
+    putStrLn "---------- alpha ----------"
 
-        例)
-            zero = \f. \x. x
-            succ = \n. \f. \x. f (n f x)
-            succ zero
-
-        の定義が
-
-            (\n. \f. \x. f (n f x)) (\f. \x. x)
-
-        に書き換えられ、参照先のないものは Label になる
-
-        変換前の Term の種類) Function, Apply, Var
-        変換後の Term の種類) Function, Apply, Label, Bound
-    -}
-
-    -- print expr
-    -- print db
-    let extExprs = map (\(Expr x) -> extract 0 defs x) exprs
+    let extExprs = map (\(Expr x) -> evalState(alpha 0 defs [] x) 0) exprs
     let !_ = extExprs `deepseq` ()
 
-    --traverse_ (putStrLn . show) extExprs
-    traverse_ print extExprs
+    traverse_ (putStrLn . ppShow) $ zip [1..] extExprs
 
     putStrLn ""
-    traverse_ (putStrLn . showLambda) extExprs
+    traverse_ (putStrLn . showELambda) extExprs
     putStrLn ""
-    traverse_ (putStrLn . showHaskell) extExprs
+    traverse_ (putStrLn . showEHaskell) extExprs
+    putStrLn ""
+
+    putStrLn "---------- beta ----------"
+
+    let redExprs = map (beta 0 [] []) extExprs
+    let !_ = redExprs `deepseq` ()
+
+    traverse_ (putStrLn . ppShow) redExprs
+
+    putStrLn ""
+    traverse_ (putStrLn . showELambda) redExprs
+    putStrLn ""
+    traverse_ (putStrLn . showEHaskell) redExprs
     putStrLn ""
 
     putStrLn "---------- complete ----------"
@@ -234,71 +227,138 @@ executeStmts stmts = do
 
 -- #--------------------------------------------------------------------------
 -- #
--- #        e x t r a c t
+-- #        b e t a   r e d u c t i o n
 -- #
 -- #--------------------------------------------------------------------------
 
-extract :: Indent -> [(String, Term)] -> Term -> Term
+beta :: Indent -> [ETerm] -> [(Bound, ETerm)] -> ETerm -> ETerm
 
-extract lv db (Var key) = do
-    --let !_ = trace (mkdbg lv "Var" [ "<" ,key ]) 1
+beta lv args db org@(EApply lt rt) = do
+    --let !_ = trace (mkdbg lv "App" [ "<" ,showEType lt ++ ":" ++ showELambda lt ,showEType rt ++ ":" ++ showELambda rt ]) 1
 
-    let term = case lookup key db of
-                    Just x -> extract (lv + 1) db x
-                    _      -> Label key
+    let args' = (rt:args)
 
-    --let !_ = trace (mkdbg lv "Var" [ "<" ,showType term ++ ":" ++ showLambda term ]) 1
-
-    term
+    beta (lv + 1) args' db lt
 
 
-extract lv db (Function c term) = do
-    --let !_ = trace (mkdbg lv "Fun" [ "<" ,[c] ,showType term ++ ":" ++ showLambda term ]) 1
 
-    let db' = (([c], (Bound c)):db)
-    let term' = extract (lv + 1) db' term
+beta lv args db org@(EFunction eb term) = do
+    --let !_ = trace (mkdbg lv "Fun" [ "<" ,show eb ,showEType term ++ ":" ++ showELambda term ]) 1
 
-    --let !_ = trace (mkdbg lv "Fun" [ "<" ,[c] ,showType term' ++ ":" ++ showLambda term' ]) 1
+    if null args then do
+        --let !_ = trace (mconcat [replicate 40 ' ', "no args"]) 1
+        --let !_ = trace (mconcat [replicate 40 ' ', "* db: ", ppShow db]) 1
 
-    Function c term'
+        let term' = beta_r (lv + 1) db term
+        --let term' = beta (lv + 1) args db term
+        EFunction eb term'
+        --org
+
+        else do
+            let (arg':args') = args
+            let db' = ((eb, arg'):db)
+
+            beta (lv + 1) args' db' term
 
 
-extract lv db org@(Label key) = do
-    --let !_ = trace (mkdbg lv "Lab" [ ">" ,key ]) 1
+beta lv args db org@(EBound eb) = do
+    --let !_ = trace (mkdbg lv "Bou" [ ">" ,show eb ]) 1
+
+    case lookup eb db of
+        Just x -> beta (lv + 1) args db x
+        _ -> error $ mconcat ["Not Founc:", show eb]
+
+
+beta lv args db org@(ELabel key) = do
+    --let !_ = trace (mkdbg lv "Lab" [ ">" ,show org ]) 1
+
+    let !_ = error "Invalid Term Type !!"
+
+    org
+
+-- #--------------------------------------------------------------------------
+
+beta_r :: Indent -> [(Bound, ETerm)] -> ETerm -> ETerm
+
+beta_r lv db org@(EApply lt rt) = do
+    --let !_ = trace (mkdbg lv "App" [ "<" ,showEType lt ++ ":" ++ showELambda lt ,showEType rt ++ ":" ++ showELambda rt ]) 1
+
+    let lt' = beta_r (lv + 1) db lt
+    let rt' = beta_r (lv + 1) db rt
+
+    EApply lt' rt'
+
+
+
+beta_r lv db org@(EFunction eb term) = do
+    --let !_ = trace (mkdbg lv "Fun" [ "<" ,show eb ,showEType term ++ ":" ++ showELambda term ]) 1
+
+    let term' = beta_r (lv + 1) db term
+    EFunction eb term'
+
+
+beta_r lv db org@(EBound eb) = do
+    --let !_ = trace (mkdbg lv "Bou" [ ">" ,show eb ]) 1
+
+    case lookup eb db of
+        Just x -> beta_r (lv + 1) db x
+        _ -> do
+            --let !_ = trace (mconcat ["Not Founc:", show eb]) 1
+            org
+
+
+beta_r lv db org = do
+    --let !_ = trace (mkdbg lv "Non" [ ">" ,show org ]) 1
 
     let !_ = error "Invalid Term Type !!"
 
     org
 
 
-extract lv db (Apply lt rt) = do
-    --let !_ = trace (mkdbg lv "App" [ "<" ,showType lt ++ ":" ++ showLambda lt ,showType rt ++ ":" ++ showLambda rt ]) 1
-
-    let lt' = extract (lv + 1) db lt
-    let rt' = extract (lv + 1) db rt
-
-    --let !_ = trace (mkdbg lv "App" [ ">" ,showType lt'  ++ ":" ++ showLambda lt' ,showType rt' ++ ":" ++ showLambda rt' ]) 1
-
-    Apply lt' rt'
-
-
-extract lv db org@(Bound c) = do
-    --let !_ = trace (mkdbg lv "Bou" [ ">" ,[c] ]) 1
-
-    org
-
 -- #--------------------------------------------------------------------------
 -- #
--- #
+-- #        a l p h a   c o n v e r s i o n
 -- #
 -- #--------------------------------------------------------------------------
 
---mkdbg lv t xs = (indentStr lv) ++ (mconcat . (intersperse "|") $ ["|", t] ++ xs ++ ["|"])
+genId :: State Int Int
+genId = modify (+1) >> get
 
-mkdbg lv t = (++) (indentStr lv) . mconcat . intersperse "|" . (++) ["|", t] . flip (++) ["|"]
 
-indentStr :: Indent -> String
-indentStr n = replicate (n * 2) ' '
+alpha :: Indent -> [(String, PTerm)] -> [(String, Bound)] -> PTerm -> State Int ETerm
+
+alpha lv pdb edb (PApply lt rt) = do
+    lt' <- alpha (lv + 1) pdb edb lt
+    rt' <- alpha (lv + 1) pdb edb rt
+
+    return $ EApply lt' rt'
+
+
+alpha lv pdb edb (PFunction c term) = do
+    newId <- genId
+
+    let eb = Bound $ (c:'#':show newId)
+
+    let edb' = (([c], eb):edb)
+    term' <- alpha (lv + 1) pdb edb' term
+
+    return $ EFunction eb term'
+
+
+alpha lv pdb edb (PVar key) = do
+    case lookup key edb of
+        Just x -> return $ EBound x
+        _ ->
+            case lookup key pdb of
+                Just x -> alpha (lv + 1) pdb edb x
+                _ -> return $ ELabel key
+
+
+-- #--------------------------------------------------------------------------
+-- #
+-- #        m a i n
+-- #
+-- #--------------------------------------------------------------------------
 
 
 main = do
@@ -310,7 +370,7 @@ main = do
 
     input <- readFile "example.lmd"
 
-    case P.parse parser "(src)" input of
+    case P.runParser parser 1 "(src)" input of
         Right stmts -> executeStmts stmts
         Left err -> putStrLn "[parse error]" >> print err
 

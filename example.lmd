@@ -1,5 +1,6 @@
 --
 -- https://ja.wikipedia.org/wiki/%E3%83%A9%E3%83%A0%E3%83%80%E8%A8%88%E7%AE%97
+-- https://zenn.dev/openlogi/articles/introduction-to-lambda-calculus
 --
 -- DEFINE
 --
@@ -16,6 +17,9 @@ c9    = succ c8
 
 succ  = \n. \f. \x. f (n f x)
 pred  = \n. \f. \x. n (\g. \h. h (g f)) (\u. x) (\u. u)
+--const = \a. \b. a
+const = true
+id    = \a. a
 
 true = \x. \y. x
 false = \x. \y. y
@@ -27,15 +31,22 @@ if = \p. \x. \y. p x y
 
 iszero = \n. n (\x. false) true
 
---plus = \m. \n. \f. \x. m f (n f x)
-plus = \m. \n. m succ n
+plus = \m. \n. \f. \x. m f (n f x)
+--plus = \m. \n. m succ n
 
 mult = \m. \n. \f. m (n f)
+
+pair  = \f. \s. \b. b f s
+first = \p. p true
+secnd = \p. p false
+nil   = \c. \n. n
+cons  = \x. \l. (\c. \n. c x (l c n))
 
 --
 -- REDUCTION
 --
 
+--(\f. \x. \f. f x)
 --(\f. f) (\x. x)
 --(\f.\x. f x) (\y.y) z
 --(\fg. f g) (\a. a) (\b. b x) h
@@ -45,13 +56,36 @@ mult = \m. \n. \f. m (n f)
 
 --pred c3
 --iszero c0
+--iszero c1
 --true
+
+--xx = if true (pred c1) (plus c3 c2)
+--if (iszero xx) (plus c7 c8) (c4)
+
 
 --(\fab. f a b) plus c1 c2
 --(\ab. plus a b) c1 c2
 
-succ c0
+--succ c0
 --plus c1 c2
+
+--mult c1 c2
+
+--const c1 c2
+--id c1
+
+--const id c1 c2
+
+--(λa. λb. a b) (λc. c) c1
+(λa. a) (λb. b) ((λc. c) c1)
+
+
+-- no stop - beta
+--(\x. x x) (\x. x x)
+
+
+--cons c1 (cons c2 (cons c3 nil))
+--(λc. λn. c c1 (c c2 (c c3 n)))
 
 
 -- EOF

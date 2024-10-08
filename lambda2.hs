@@ -51,9 +51,9 @@ showType (Var _) = "V"
 showType (Lambda _ _) = "L"
 showType (Apply _ _) = "A"
 
-showHaskell (Lambda key term) = mconcat ["(\\", key, " -> ", showHaskell term, ")"]
+showHaskell (Lambda key term) = mconcat ["(\\", showLambdaKey key, " -> ", showHaskell term, ")"]
 showHaskell (Apply lt rt) = mconcat ["(", showHaskell lt, " ", showHaskell rt, ")"]
-showHaskell (Var key) = key
+showHaskell x = showLambda x
 
 
 separator = P.oneOf " \t"
@@ -200,8 +200,8 @@ executeStmts stmts = do
     putStrLn ""
 
     -- alpha
-    let (aDefs, lastId) = runState (mapAlphaDefines defs) 0
-    let (aExprs, _) = runState (mapAlphaExprs exprs) lastId
+    let (aDefs, lastId) = runState (traverse (\(x, y) -> (x,) <$> alpha [] y) defs) 0
+    let (aExprs, _) = runState (traverse (alpha []) exprs) lastId
 
     putStrLn "---------- alpha define ----------"
     traverse_ (putStrLn . ((\k v -> k ++ " = " ++ v) <$> fst <*> showLambda . snd)) aDefs
@@ -219,23 +219,6 @@ executeStmts stmts = do
     putStrLn ""
     putStrLn "---------- complete ----------"
     putStrLn ""
-
-
-
-mapAlphaDefines :: [(String, Term)] -> State Int [(String, Term)]
-
-mapAlphaDefines [] = return []
-
-mapAlphaDefines ((name, expr):defs) =
-    (:) <$> ((name, ) <$> alpha [] expr) <*> mapAlphaDefines defs
-
-
-mapAlphaExprs :: [Term] -> State Int [Term]
-
-mapAlphaExprs [] = return []
-
-mapAlphaExprs (expr:defs) = (:) <$> alpha [] expr <*> mapAlphaExprs defs
-
 
 
 pPrint = putStrLn . ppShow

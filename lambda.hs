@@ -10,7 +10,7 @@ import Control.Monad (void, when)
 import Control.Arrow (first, second)
 import Control.Monad.State
 
-import Debug.Trace (trace, assert)
+import Debug.Trace (trace)
 import Text.Show.Pretty (ppShow)
 
 import GHC.Generics (Generic)
@@ -199,6 +199,7 @@ debugPrint2 t b = do
     putStrLn ""
 
 
+
 executeStmts stmts = do
     let isExpr :: Stmt -> Bool
         isExpr (Expr _) = True
@@ -208,7 +209,7 @@ executeStmts stmts = do
     let defs = map (\(Define x) -> x) $ stmts \\ exps'
 
     let dups = map (!! 0) . filter ((> 1) . length) . group . sort $ map fst defs
-    when (notNull dups) (error (mconcat ["duplicate terms (", show dups, ")"]))
+    when (notNull dups) (error $ mconcat ["duplicate terms (", show dups, ")"])
     --guard (notnull dups)
 
     let exps = map (\(Expr x) -> x) $ exps'

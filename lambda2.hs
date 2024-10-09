@@ -32,8 +32,8 @@ import qualified Text.Parsec as P
 
 data Term =
     Var String |
-    Lambda {mBbound::String, mBbody::Term} |
-    Apply {mFunc::Term, mAarg::Term} deriving (Eq, Show, Generic)
+    Fun {mBbound::String, mBbody::Term} |
+    App {mLeft::Term, mRight::Term} deriving (Eq, Show, Generic)
 
 instance NFData Term
 
@@ -43,16 +43,16 @@ type Indent = Int
 
 showLambdaKey = takeWhile (/= '#')
 
-showLambda (Lambda key term) = mconcat ["(λ", showLambdaKey key, ".", showLambda term, ")"]
-showLambda (Apply lt rt) = mconcat ["(", showLambda lt, " ", showLambda rt, ")"]
+showLambda (Fun key term) = mconcat ["(λ", showLambdaKey key, ".", showLambda term, ")"]
+showLambda (App lt rt) = mconcat ["(", showLambda lt, " ", showLambda rt, ")"]
 showLambda (Var key) = showLambdaKey key
 
 showType (Var _) = "V"
-showType (Lambda _ _) = "L"
-showType (Apply _ _) = "A"
+showType (Fun _ _) = "L"
+showType (App _ _) = "A"
 
-showHaskell (Lambda key term) = mconcat ["(\\", showLambdaKey key, " -> ", showHaskell term, ")"]
-showHaskell (Apply lt rt) = mconcat ["(", showHaskell lt, " ", showHaskell rt, ")"]
+showHaskell (Fun key term) = mconcat ["(\\", showLambdaKey key, " -> ", showHaskell term, ")"]
+showHaskell (App lt rt) = mconcat ["(", showHaskell lt, " ", showHaskell rt, ")"]
 showHaskell x = showLambda x
 
 
@@ -96,15 +96,15 @@ parseStmt = skipSpaces *>
 parseDefine = do
     ident <- parseIdent
     literal '='
-    apply <- parseApply
+    apply <- parseApp
 
     return $ Just $ Define (ident, apply)
 -}
---parseDefine = Just . Define <$> ((,) <$> (parseIdent <* literal '=') <*> parseApply)
-parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseApply
+--parseDefine = Just . Define <$> ((,) <$> (parseIdent <* literal '=') <*> parseApp)
+parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseApp
 
 
-parseExpr = Just . Expr <$> parseApply
+parseExpr = Just . Expr <$> parseApp
 
 
 {-
@@ -123,45 +123,45 @@ commentLine = Nothing <$ (P.string "--" *> many (P.noneOf "\n"))
 emptyLine = Nothing <$ skipSpaces
 
 
-parseApply = do
+parseApp = do
     term <- parseTerm
 
     do
         terms <- P.many1 parseTerm
-        --return $ foldl (\ls x -> Apply ls x) term terms
-        return $ foldl Apply term terms
+        --return $ foldl (\ls x -> App ls x) term terms
+        return $ foldl App term terms
 
         <|> do
             return term
 
 
-parseTerm = parseNested <|> parseLambda <|> parseVar
+parseTerm = parseNested <|> parseFun <|> parseVar
 
 
-parseNested = literal '(' *> parseApply <* literal ')'
+parseNested = literal '(' *> parseApp <* literal ')'
 
---parseLambda = Lambda <$> (literal '\\' *> parseLetter <* literal '.') <*> parseApply
+--parseFun = Fun <$> (literal '\\' *> parseLetter <* literal '.') <*> parseApp
 {-
-parseLambda = do
+parseFun = do
     literal '\\'
     cs <- parseLetter
     literal '.'
 
-    Lambda [cs] <$> parseApply
+    Fun [cs] <$> parseApp
 -}
-parseLambda = do
+parseFun = do
     --literal '\\'
     P.oneOf "\\λ"
     skipSpaces
 
     cs <- filter (not . isSpace) <$> parseArgs
     literal '.'
-    apply <- parseApply
+    apply <- parseApp
 
     let (s:ss) = map (\x -> [x]) $ reverse cs
 
-    --return $ foldl (\acc c -> Lambda c acc) (Lambda x apply) xs
-    return $ foldl (flip Lambda) (Lambda s apply) ss
+    --return $ foldl (\acc c -> Fun c acc) (Fun x apply) xs
+    return $ foldl (flip Fun) (Fun s apply) ss
 
 
 parseVar = Var <$> parseIdent
@@ -204,6 +204,8 @@ executeStmts stmts = do
     let (aExprs, _) = runState (traverse (alpha []) exprs) lastId
 
     putStrLn "---------- alpha define ----------"
+    traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> show . snd)) aDefs
+    putStrLn ""
     traverse_ (putStrLn . ((\k v -> k ++ " = " ++ v) <$> fst <*> showLambda . snd)) aDefs
     putStrLn ""
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showHaskell . snd)) aDefs
@@ -235,14 +237,14 @@ genId = modify (+1) >> get
 
 alpha :: [(String, String)] -> Term -> State Int Term
 
-alpha db (Apply lt rt) = do
+alpha db (App lt rt) = do
     lt' <- alpha db lt
     rt' <- alpha db rt
 
-    return $ Apply lt' rt'
+    return $ App lt' rt'
 
 
-alpha db (Lambda key term) = do
+alpha db (Fun key term) = do
     newId <- genId
 
     let key' = key ++ ('#' : (show newId))
@@ -250,7 +252,7 @@ alpha db (Lambda key term) = do
 
     term' <- alpha db' term
 
-    return $ Lambda key' term'
+    return $ Fun key' term'
     
 
 alpha db org@(Var key) = do

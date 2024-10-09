@@ -35,7 +35,7 @@ iszero = \n. n (\x. false) true
 --plus = \m. \n. \f. \x. m f (n f x)
 plus = \m. \n. m succ n
 
-mult = \m. \n. \f. m (n f)
+mult = \mnf. n(m f)
 
 pair  = \f. \s. \b. b f s
 first = \p. p true
@@ -69,9 +69,9 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 --succ c0
 --c1
 --c2
---plus c1 c2
+--plus c4 c5
 
---mult c1 c2
+mult c2 c3
 
 --const c1 c2
 --id c1
@@ -83,7 +83,7 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 
 
 --<plus><c3>(<plus><c1><c2>)
-plus c3 (plus c1 c2)
+--plus c3 (plus c1 c2)
 
 -- 発散
 --(\x. x x) (\x. x x)

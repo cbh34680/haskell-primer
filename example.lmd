@@ -53,7 +53,8 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 --(\fg. f g) (\a. a) (\b. b x) h
 
 --and true false
---plus c3 (plus c1 c2)
+--<plus><c3>(<plus><c1><c2>)
+plus c3 (plus c1 c2)
 
 --pred c3
 --iszero c0
@@ -77,7 +78,7 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 --const c1 c2
 --id c1
 
-const id c1 c2
+--const id c1 c2
 
 --(λa. λb. a b) (λc. c) c1
 --(λa. a) (λb. b) ((λc. c) c1)
@@ -89,6 +90,11 @@ const id c1 c2
 
 --cons c1 (cons c2 (cons c3 nil))
 --(λc. λn. c c1 (c c2 (c c3 n)))
+
+--(λm. λn. λf. λx. m f (n f x)) (λf. λx. f (f x)) (λf. λx. f (f (f x)))
+--(\m. \n. \f. \x. m (n f) x) (\f. \x. f (f x)) (\f. \x. f (f (f x)))
+
+
 
 
 -- EOF

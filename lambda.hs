@@ -32,7 +32,8 @@ import qualified Text.Parsec as P
 data Term =
     Var String |
     Fun {mBbound::String, mBbody::Term} |
-    App {mLeft::Term, mRight::Term} deriving (Eq, Show, Generic)
+    App {mLeft::Term, mRight::Term}
+    deriving (Eq, Show, Generic)
 
 instance NFData Term
 
@@ -308,7 +309,7 @@ argsIsEmpty = do
 beta :: [(String, Term)] -> Term -> State [Term] Term
 
 beta db (App lt rt) = do
-    let !_ = trace (mkdbg 0 "App" [ "<" ,showLambda lt, showLambda rt ]) 1
+    --let !_ = trace (mkdbg 0 "App" [ "<" ,showLambda lt, showLambda rt ]) 1
 
     -- 引数スタックに追加
     argsPush rt
@@ -321,7 +322,7 @@ beta db (App lt rt) = do
     if isEmpty then
         {-
             "引数スタックが空 (消費された)" なら (関数が実行された状態なので) 
-            それを返却値とする
+            戻り値をそのまま返却
         -}
 
         return lt'
@@ -370,18 +371,20 @@ beta db org@(Fun key term) = do
 
 
 beta db org@(Var key) = do
-    let !_ = trace (mkdbg 0 "Var" [ "<" ,key ]) 1
+    --let !_ = trace (mkdbg 0 "Var" [ "<" ,key ]) 1
 
     -- キー名を元に変数マップをたどる
 
     case lookup key db of
-        Just x -> if x /= org then beta db x
+        --Just x -> beta db x
 
+        Just x -> if x /= org then beta db x
                     else do
                         -- 無限ループ回避
                         let !_ = trace (mconcat $ intersperse "|" [replicate 30 ' ', "* equal ref", showLambda org, show org ]) 1
 
                         return org
+
 
         _ -> return org
 

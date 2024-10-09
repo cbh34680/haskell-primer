@@ -53,8 +53,6 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 --(\fg. f g) (\a. a) (\b. b x) h
 
 --and true false
---<plus><c3>(<plus><c1><c2>)
-plus c3 (plus c1 c2)
 
 --pred c3
 --iszero c0
@@ -84,7 +82,10 @@ plus c3 (plus c1 c2)
 --(λa. a) (λb. b) ((λc. c) c1)
 
 
--- no stop - beta
+--<plus><c3>(<plus><c1><c2>)
+plus c3 (plus c1 c2)
+
+-- 発散
 --(\x. x x) (\x. x x)
 
 

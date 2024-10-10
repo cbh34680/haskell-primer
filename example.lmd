@@ -59,8 +59,6 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 --iszero c1
 --true
 
---tmp = if true (pred c1) (plus c3 c2)
---if (iszero tmp) (plus c7 c8) (c4)
 
 
 --(\fab. f a b) plus c1 c2
@@ -71,19 +69,22 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 --c2
 --plus c4 c5
 
-mult c2 c3
 
 --const c1 c2
---id c1
+id c1
 
 --const id c1 c2
 
 --(λa. λb. a b) (λc. c) c1
 --(λa. a) (λb. b) ((λc. c) c1)
 
+--tmp = if true (pred c1) (plus c3 c2)
+--if (iszero tmp) (plus c7 c8) (c4)
 
 --<plus><c3>(<plus><c1><c2>)
 --plus c3 (plus c1 c2)
+
+--mult c2 c3
 
 -- 発散
 --(\x. x x) (\x. x x)

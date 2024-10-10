@@ -31,13 +31,14 @@ import qualified Text.Parsec as P
 
 data Term =
     Var String |
+    Label String |
     Fun {mBbound::String, mBbody::Term} |
     App {mLeft::Term, mRight::Term}
     deriving (Eq, Show, Generic)
 
 instance NFData Term
 
-data Stmt = Define (String, Term) | Expr Term deriving (Eq, Show)
+data Stmt = Macro (String, Term) | Expr Term deriving (Eq, Show)
 
 type Indent = Int
 
@@ -46,9 +47,11 @@ showLambdaKey = takeWhile (/= '#')
 showLambda (Fun key term) = mconcat ["(λ", showLambdaKey key, ".", showLambda term, ")"]
 showLambda (App lt rt) = mconcat ["(", showLambda lt, " ", showLambda rt, ")"]
 showLambda (Var key) = showLambdaKey key
+showLambda (Label key) = showLambdaKey key
 
 showType (Var _) = "V"
-showType (Fun _ _) = "L"
+showType (Label _) = "F"
+showType (Fun _ _) = "F"
 showType (App _ _) = "A"
 
 showHaskell (Fun key term) = mconcat ["(\\", showLambdaKey key, " -> ", showHaskell term, ")"]
@@ -88,20 +91,20 @@ parser = (catMaybes <$> P.many parseStmt) <* P.eof
 
 --parseTerm :: P.Parsec String () Term
 parseStmt = skipSpaces *>
-    (P.try parseDefine <|> commentLine <|> parseExpr <|> emptyLine) <* eol
+    (P.try parseMacro <|> commentLine <|> parseExpr <|> emptyLine) <* eol
 
---parseStmt = (P.try parseDefine <|> parseExpr <|> emptyLine) <* eol
+--parseStmt = (P.try parseMacro <|> parseExpr <|> emptyLine) <* eol
 
 {-
-parseDefine = do
+parseMacro = do
     ident <- parseIdent
     literal '='
     apply <- parseApp
 
-    return $ Just $ Define (ident, apply)
+    return $ Just $ Macro (ident, apply)
 -}
---parseDefine = Just . Define <$> ((,) <$> (parseIdent <* literal '=') <*> parseApp)
-parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseApp
+--parseMacro = Just . Macro <$> ((,) <$> (parseIdent <* literal '=') <*> parseApp)
+parseMacro = ((Just . Macro) .) . (,) <$> (parseIdent <* literal '=') <*> parseApp
 
 
 parseExpr = Just . Expr <$> parseApp
@@ -207,7 +210,7 @@ executeStmts stmts = do
         isExpr _ = False
 
     let exps' = filter isExpr stmts
-    let defs = map (\(Define x) -> x) $ stmts \\ exps'
+    let defs = map (\(Macro x) -> x) $ stmts \\ exps'
 
     let dups = map (!! 0) . filter ((> 1) . length) . group . sort $ map fst defs
     when (notNull dups) (error $ mconcat ["duplicate terms (", show dups, ")"])
@@ -235,7 +238,7 @@ executeStmts stmts = do
 
     putStrLn "---------- macro define ----------"
 
-    -- extract macro
+    -- 全てのマクロをラムダ式に展開
 
     let eDefs = map (second $ extract defs) defs
     let eExps = map (extract defs) exps
@@ -245,13 +248,14 @@ executeStmts stmts = do
     --let eDefs = defs
     --let eExps = exps
 
-    -- alpha
+    -- α 変換
+
     let (aDefs, aLastId) = runState (traverse (\(x, y) -> (x,) <$> alpha [] y) eDefs) 0
     let (aExps, _) = runState (traverse (alpha []) eExps) aLastId
 
     debugPrint "alpha" aDefs aExps
 
-    -- beta
+    -- β 簡約
 
     let bExps = map (\x -> evalState (beta [] x) []) aExps
 
@@ -261,17 +265,16 @@ executeStmts stmts = do
 
     debugPrint2 "beta" bExps
 
-    --putStrLn ""
-    --putStrLn "---------- complete ----------"
-    --putStrLn ""
+    putStrLn ""
+    putStrLn "---------- complete ----------"
+    putStrLn ""
 
 
 -- #--------------------------------------------------------------------------
 -- #
--- #        beta
+-- #        beta reduction
 -- #
 -- #--------------------------------------------------------------------------
-
 
 argsPush :: Term -> State [Term] ()
 
@@ -299,14 +302,71 @@ argsIsEmpty = do
     return $ null xs
 
 
--- #--------
+--
+-- Var を経由した循環参照が発生したときは Label に変換する
+--
+-- example) Var "f#100" --> db [("f#100", Var "f#100"), ...]
+--
+var :: [(String, Term)] -> Term -> Term
 
+var db org@(Var key) = do
+
+    case lookup key db of
+        Just x -> if x /= org then var db x else do
+
+            let !_ = trace (mconcat [replicate 40 ' ', "[INFO] Circulation detected: ", show org]) 1
+
+            Label key
+
+        Nothing -> org
+
+
+var _ org = org
+
+
+--
+-- 循環参照による発散を回避するため、betaP は直接呼び出さず
+-- beta を経由することで Term への参照を解決する
+--
 beta :: [(String, Term)] -> Term -> State [Term] Term
 
 beta db (App lt rt) = do
-    --let !_ = trace (mkdbg 0 "App" [ "<" ,showLambda lt, showLambda rt ]) 1
+    let lt' = var db lt
+    let rt' = var db rt
 
-    -- 引数スタックに追加
+    betaP db (App lt' rt')
+
+
+beta db (Fun key term) = do
+    let term' = var db term
+
+    betaP db (Fun key term')
+
+
+beta db org = betaP db org
+
+
+--
+-- 変数マップを登録する前に循環参照は Label に変換する
+--
+-- --> "(\x. x x) (\x. x x)" が発散しない
+--
+{-
+rec :: String -> Term -> (String, Term)
+
+rec key term@(Var key')
+    | key == key' = (key, Label key)
+    | otherwise   = (key, term)
+
+
+rec key term = (key, term)
+-}
+
+--
+betaP :: [(String, Term)] -> Term -> State [Term] Term
+
+betaP db (App lt rt) = do
+    -- 右側を引数スタックに追加
     argsPush rt
 
     -- 左側を評価
@@ -314,34 +374,36 @@ beta db (App lt rt) = do
 
     isEmpty <- argsIsEmpty
 
-    if isEmpty then
+    if isEmpty then do
         {-
-            "引数スタックが空 (消費された)" なら (関数が実行された状態なので) 
-            戻り値をそのまま返却
+            左側を評価した結果 "引数スタックが空 (消費された)" なら
+            (関数が実行された状態なので) 戻り値をそのまま返却
         -}
+        let !_ = trace (mkdbg 0 "App" [ "<" ,showLambda lt, showLambda rt ]) 1
 
         return lt'
 
         else do
             {-
-                引数が消費されていないときは、右側を評価
+                引数が消費されていないときは、(左側は実行されていないので)
+                右側を評価
             -}
+            let !_ = trace (mkdbg 0 "App" [ ">" ,showLambda lt, showLambda rt ]) 1
 
             -- 引数スタックはリセット
             chkRt <- argsPop
 
             -- 念のためチェック
-            --when (isJust chkRt) (when (fromJust chkRt /= rt) (error "rt != chkRt"))
+            when (isJust chkRt) $ when (fromJust chkRt /= rt) $ do
+                error . mconcat $ intersperse " " ["rt != chkRt", show chkRt, show rt]
 
             -- 右側を評価して再設定
-
             rt' <- beta db rt
 
             return $ App lt' rt'
 
 
-beta db org@(Fun key term) = do
-    let !_ = trace (mkdbg 0 "Fun" [ "<" ,key, showLambda term ]) 1
+betaP db org@(Fun key term) = do
 
     -- 引数スタックから取り出し
     arg <- argsPop
@@ -349,45 +411,55 @@ beta db org@(Fun key term) = do
     case arg of
         Just arg' -> do
             -- 取り出し成功 (引数があった)
+            let !_ = trace (mkdbg 0 "Fun" ["<" ,key, showLambda term, showLambda arg']) 1
 
             -- 変数マップに、仮引数をキーとして登録
             let db' = (key, arg'):db
 
+            -- rec の使用 --> "(\x. x x) (\x. x x)" が発散しない
+            --let db' = (rec key arg'):db
+
             -- 本体を評価
             beta db' term
 
-
         Nothing -> do
             -- 引数がないときは、本体を評価したものを再設定
+            let !_ = trace (mkdbg 0 "Fun" [ ">" ,key, showLambda term, "*noarg*" ]) 1
 
             term' <- beta db term
 
             return $ Fun key term'
 
 
-beta db org@(Var key) = do
+betaP db org@(Var key) = do
     --let !_ = trace (mkdbg 0 "Var" [ "<" ,key ]) 1
 
     -- キー名を元に変数マップをたどる
 
     case lookup key db of
-        --Just x -> beta db x
+        Just x -> beta db x
+
+        {-
+        循環参照時は Label に変換
+        --> "(\x. x x) (\x. x x)" が発散しない
 
         Just x -> if x /= org then beta db x
                     else do
-                        -- 無限ループ回避
+                        -- 発散回避
                         let !_ = trace (mconcat $ intersperse "|" [replicate 30 ' ', "* equal ref", showLambda org, show org ]) 1
 
-                        return org
-
+                        return $ Label key
+        -}
 
         _ -> return org
 
 
+betaP db org = return org
+
 
 -- #--------------------------------------------------------------------------
 -- #
--- #        alpha
+-- #        alpha conversion
 -- #
 -- #--------------------------------------------------------------------------
 
@@ -449,7 +521,7 @@ extract db org@(Var key) = do
 
 -- #--------------------------------------------------------------------------
 -- #
--- #
+-- #        main
 -- #
 -- #--------------------------------------------------------------------------
 

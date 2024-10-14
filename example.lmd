@@ -17,7 +17,10 @@ c8    = succ c7
 c9    = succ c8
 
 succ  = \n. \f. \x. f (n f x)
+
 pred  = \n. \f. \x. n (\g. \h. h (g f)) (\u. x) (\u. u)
+--pred =    \n. \s. \z. n (\x. \y. y (x s)) (\x. z) (\x. x)
+
 const = \a. \b. a
 --const = true
 id    = \a. a
@@ -54,11 +57,12 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 
 --and true false
 
+--c3
+--pred (λf.(λx.(f (f x))))
 --pred c3
 --iszero c0
 --iszero c1
 --true
-
 
 
 --(\fab. f a b) plus c1 c2
@@ -71,7 +75,7 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 
 
 --const c1 c2
-id c1
+--id c1
 
 --const id c1 c2
 
@@ -83,6 +87,7 @@ id c1
 
 --<plus><c3>(<plus><c1><c2>)
 --plus c3 (plus c1 c2)
+mult (pred c3) (plus c3 (plus c1 c2))
 
 --mult c2 c3
 
@@ -96,6 +101,13 @@ id c1
 --(λm. λn. λf. λx. m f (n f x)) (λf. λx. f (f x)) (λf. λx. f (f (f x)))
 --(\m. \n. \f. \x. m (n f) x) (\f. \x. f (f x)) (\f. \x. f (f (f x)))
 
+
+--pred c3
+
+
+--(\gh.h(g f))   ((\gh.h(g f)) (\u.x))
+-- OK: (λh.h(f x))
+-- NG: (λh.(h gf))
 
 
 

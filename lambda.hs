@@ -5,10 +5,13 @@
 
 -- :set -DNOT_DIVE
 
+--import Test.QuickCheck
+
 import Control.Applicative ((<|>))
 import Control.Monad (void, when)
 import Control.Arrow (first, second)
 import Control.Monad.State
+import Control.Monad.Except
 
 import Debug.Trace (trace)
 import Text.Show.Pretty (ppShow)
@@ -31,8 +34,9 @@ import qualified Text.Parsec as P
 
 data Term =
     Var String |
-    Fun {mBbound::String, mBbody::Term} |
-    App {mLeft::Term, mRight::Term}
+    Bnd String |
+    Fun {mKey::String, mBbody::Term} |
+    App {mLT::Term, mRT::Term}
     deriving (Eq, Show, Generic)
 
 instance NFData Term
@@ -41,17 +45,20 @@ data Stmt = Define (String, Term) | Expr Term deriving (Eq, Show)
 
 type Indent = Int
 
-showLambdaKey = takeWhile (/= '#')
+showLambdaKey = takeWhile (/= '{')
+--showLambdaKey = id
 
-showLambda (Fun key term) = mconcat ["(λ", showLambdaKey key, ".", showLambda term, ")"]
+showLambda (Fun bnd body) = mconcat ["(λ", showLambdaKey bnd, ".", showLambda body, ")"]
 showLambda (App lt rt) = mconcat ["(", showLambda lt, " ", showLambda rt, ")"]
 showLambda (Var key) = showLambdaKey key
+showLambda (Bnd key) = showLambdaKey key
 
 showType (Var _) = "V"
-showType (Fun _ _) = "L"
+showType (Bnd _) = "B"
+showType (Fun _ _) = "F"
 showType (App _ _) = "A"
 
-showHaskell (Fun key term) = mconcat ["(\\", showLambdaKey key, " -> ", showHaskell term, ")"]
+showHaskell (Fun bnd body) = mconcat ["(\\", showLambdaKey bnd, " -> ", showHaskell body, ")"]
 showHaskell (App lt rt) = mconcat ["(", showHaskell lt, " ", showHaskell rt, ")"]
 showHaskell x = showLambda x
 
@@ -191,8 +198,16 @@ debugPrint1 t a = do
 
 
 debugPrint2 t b = do
+    debugPrint21 t
+    debugPrint22 t b
+
+
+debugPrint21 t = do
     putStrLn $ "---------- " ++ t ++ " expr ----------"
-    pPrint $ b
+
+
+debugPrint22 t b = do
+    pPrint b
     putStrLn ""
     traverse_ (putStrLn . showLambda) b
     putStrLn ""
@@ -210,7 +225,7 @@ executeStmts stmts = do
     let defs = map (\(Define x) -> x) $ stmts \\ exps'
 
     let dups = map (!! 0) . filter ((> 1) . length) . group . sort $ map fst defs
-    when (notNull dups) (error $ mconcat ["duplicate terms (", show dups, ")"])
+    when (notNull dups) (error $ mconcat ["duplicate defines (", show dups, ")"])
     --guard (notnull dups)
 
     let exps = map (\(Expr x) -> x) $ exps'
@@ -226,44 +241,58 @@ executeStmts stmts = do
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showHaskell . snd)) defs
     putStrLn ""
     putStrLn "---------- expr ----------"
-    pPrint $ exps
+    pPrint exps
     putStrLn ""
     traverse_ (putStrLn . showLambda) exps
     putStrLn ""
     traverse_ (putStrLn . showHaskell) exps
     putStrLn ""
 
-    putStrLn "---------- macro define ----------"
-
     -- extract macro
 
     let eDefs = map (second $ extract defs) defs
     let eExps = map (extract defs) exps
 
-    debugPrint "macro" eDefs eExps
-
-    --let eDefs = defs
-    --let eExps = exps
+    --debugPrint "macro" eDefs eExps
 
     -- alpha
-    let (aDefs, aLastId) = runState (traverse (\(x, y) -> (x,) <$> alpha [] y) eDefs) 0
-    let (aExps, _) = runState (traverse (alpha []) eExps) aLastId
+    --let (aDefs, aLastId) = runState (traverse (\(x, y) -> (x,) <$> alpha [] y) eDefs) 0
+    --let (aExps, _) = runState (traverse (alpha []) eExps) aLastId
 
-    debugPrint "alpha" aDefs aExps
+    let (aExps, _) = runState (traverse (alpha []) eExps) 0
+
+    debugPrint2 "alpha" aExps
 
     -- beta
 
-    let bExps = map (\x -> evalState (beta [] x) []) aExps
+    debugPrint21 "beta"
 
-    putStrLn "==="
-    let !_ = bExps `deepseq` ()
+    bExps <- traverse repeatWhileChanging aExps
+
     putStrLn ""
+    putStrLn "---------- complete ----------"
+    putStrLn ""
+    pPrint bExps
+    putStrLn ""
+    traverse_ (putStrLn . showLambda) bExps
+    putStrLn ""
+    traverse_ (putStrLn . showHaskell) bExps
 
-    debugPrint2 "beta" bExps
 
-    --putStrLn ""
-    --putStrLn "---------- complete ----------"
-    --putStrLn ""
+
+repeatWhileChanging :: Term -> IO Term
+repeatWhileChanging aExp = do
+    let bExp = beta aExp
+    --let !_ = bExp `deepseq` ()
+
+    if aExp == bExp then do
+        return bExp
+
+        else do
+            putStrLn ""
+            putStrLn . showLambda $ bExp
+
+            repeatWhileChanging bExp
 
 
 -- #--------------------------------------------------------------------------
@@ -272,117 +301,30 @@ executeStmts stmts = do
 -- #
 -- #--------------------------------------------------------------------------
 
+beta :: Term -> Term
 
-argsPush :: Term -> State [Term] ()
+beta (App lt@(Fun bnd body) rt) = repBody bnd (beta rt) (beta body)
 
-argsPush x = do
-    xs <- get
-    put (x:xs)
+beta (App lt rt) = App (beta lt) (beta rt)
 
+beta (Fun bnd body) = Fun bnd (beta body)
 
-argsPop :: State [Term] (Maybe Term)
-
-argsPop = do
-    xs <- get
-
-    if null xs then return Nothing else do
-        let (x':xs') = xs
-        put xs'
-
-        return $ Just x'
+beta org = org
 
 
-argsIsEmpty :: State [Term] Bool
+-- # replace function body
 
-argsIsEmpty = do
-    xs <- get
-    return $ null xs
+repBody :: String -> Term -> Term -> Term
 
+repBody srch val (App lt rt) =
+    App (repBody srch val lt) (repBody srch val rt)
 
--- #--------
+repBody srch val (Fun bnd body) = Fun bnd (repBody srch val body)
 
-beta :: [(String, Term)] -> Term -> State [Term] Term
+repBody srch val (Bnd key)
+    | srch == key = val
 
-beta db (App lt rt) = do
-    --let !_ = trace (mkdbg 0 "App" [ "<" ,showLambda lt, showLambda rt ]) 1
-
-    -- 引数スタックに追加
-    argsPush rt
-
-    -- 左側を評価
-    lt' <- beta db lt
-
-    isEmpty <- argsIsEmpty
-
-    if isEmpty then
-        {-
-            "引数スタックが空 (消費された)" なら (関数が実行された状態なので) 
-            戻り値をそのまま返却
-        -}
-
-        return lt'
-
-        else do
-            {-
-                引数が消費されていないときは、右側を評価
-            -}
-
-            -- 引数スタックはリセット
-            chkRt <- argsPop
-
-            -- 念のためチェック
-            --when (isJust chkRt) (when (fromJust chkRt /= rt) (error "rt != chkRt"))
-
-            -- 右側を評価して再設定
-
-            rt' <- beta db rt
-
-            return $ App lt' rt'
-
-
-beta db org@(Fun key term) = do
-    let !_ = trace (mkdbg 0 "Fun" [ "<" ,key, showLambda term ]) 1
-
-    -- 引数スタックから取り出し
-    arg <- argsPop
-
-    case arg of
-        Just arg' -> do
-            -- 取り出し成功 (引数があった)
-
-            -- 変数マップに、仮引数をキーとして登録
-            let db' = (key, arg'):db
-
-            -- 本体を評価
-            beta db' term
-
-
-        Nothing -> do
-            -- 引数がないときは、本体を評価したものを再設定
-
-            term' <- beta db term
-
-            return $ Fun key term'
-
-
-beta db org@(Var key) = do
-    --let !_ = trace (mkdbg 0 "Var" [ "<" ,key ]) 1
-
-    -- キー名を元に変数マップをたどる
-
-    case lookup key db of
-        --Just x -> beta db x
-
-        Just x -> if x /= org then beta db x
-                    else do
-                        -- 無限ループ回避
-                        let !_ = trace (mconcat $ intersperse "|" [replicate 30 ' ', "* equal ref", showLambda org, show org ]) 1
-
-                        return org
-
-
-        _ -> return org
-
+repBody _ _ org = org
 
 
 -- #--------------------------------------------------------------------------
@@ -396,28 +338,20 @@ genId = modify (+1) >> get
 
 alpha :: [(String, String)] -> Term -> State Int Term
 
-alpha db (App lt rt) = do
-    lt' <- alpha db lt
-    rt' <- alpha db rt
+alpha db (App lt rt) = App <$> alpha db lt <*> alpha db rt
 
-    return $ App lt' rt'
-
-
-alpha db (Fun key term) = do
+alpha db (Fun bnd body) = do
     newId <- genId
 
-    let key' = key ++ ('#' : (show newId))
-    let db' = (key, key'):db
+    let bnd' = bnd ++ ('{' : (show newId ++ "}"))
+    let db' = (bnd, bnd'):db
 
-    term' <- alpha db' term
+    Fun bnd' <$> alpha db' body
 
-    return $ Fun key' term'
-    
-
-alpha db org@(Var key) = do
-    case lookup key db of
-        Just key' -> return $ Var key'
-        Nothing   -> return org
+alpha db org@(Var key) = 
+    return $ case lookup key db of
+                Just key' -> Bnd key'
+                Nothing   -> org
 
 
 -- #--------------------------------------------------------------------------
@@ -428,18 +362,9 @@ alpha db org@(Var key) = do
 
 extract :: [(String, Term)] -> Term -> Term
 
-extract db (App lt rt) = do
-    let lt' = extract db lt
-    let rt' = extract db rt
+extract db (App lt rt) = App (extract db lt) (extract db rt)
 
-    App lt' rt'
-
-
-extract db (Fun key term) = do
-    let term' = extract db term
-
-    Fun key term'
-
+extract db (Fun bnd body) = Fun bnd (extract db body)
 
 extract db org@(Var key) = do
     case lookup key db of
@@ -449,17 +374,9 @@ extract db org@(Var key) = do
 
 -- #--------------------------------------------------------------------------
 -- #
--- #
+-- #        main
 -- #
 -- #--------------------------------------------------------------------------
-
---mkdbg lv t xs = (indentStr lv) ++ (mconcat . (intersperse "|") $ ["|", t] ++ xs ++ ["|"])
-
-mkdbg lv t = (++) (indentStr lv) . mconcat . intersperse "|" . (++) ["|", t] . flip (++) ["|"]
-
-indentStr :: Indent -> String
-indentStr n = replicate (n * 2) ' '
-
 
 main = do
     input <- readFile "example.lmd"

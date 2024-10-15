@@ -8,16 +8,15 @@
 -- (ghci)
 -- :set -DDEBUG
 
+-- #define DEBUG (1)
+#define TEST (1)
 
 import Control.Applicative ((<|>))
 import Control.Monad (void, when)
 import Control.Arrow (first, second)
 
-import Debug.Trace (trace)
-import Text.Show.Pretty (ppShow)
-
-import GHC.Generics (Generic)
-import Control.DeepSeq (NFData, deepseq)
+--import GHC.Generics (Generic)
+--import Control.DeepSeq (NFData, deepseq)
 
 import Data.Foldable (traverse_, for_)
 import Data.Function ((&))
@@ -25,12 +24,20 @@ import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes, isJust, fromJust)
 import Data.List ((\\), group, sort, intersperse)
 import Data.List.Extra (notNull)
-import Test.HUnit ((~:))
 
 import qualified Text.Parsec as P
-import qualified Test.HUnit as TU
 import qualified Control.Monad.State as MS
 import qualified Control.Monad.Writer as MW
+
+#if defined DEBUG
+import Text.Show.Pretty (ppShow)
+#endif
+
+#if defined TEST
+import Test.HUnit ((~:))
+
+import qualified Test.HUnit as TU
+#endif
 
 
 data Term =
@@ -38,19 +45,18 @@ data Term =
     Bnd String |
     Fun {mKey::String, mBbody::Term} |
     App {mLT::Term, mRT::Term}
-    deriving (Eq, Show, Generic)
+    deriving (Eq, Show)
+    --deriving (Eq, Show, Generic)
+
+--instance NFData Term
 
 data Stmt =
     Define NamedTerm |
     Expr Term
     deriving (Eq, Show)
 
-
-instance NFData Term
-
 type NamedTerm = (String, Term)
 type Result a = Either String a
-
 
 --
 showLambdaKey = takeWhile (/= '{')
@@ -60,14 +66,25 @@ showLambda (App lt rt) = mconcat ["(", showLambda lt, " ", showLambda rt, ")"]
 showLambda (Var key) = showLambdaKey key
 showLambda (Bnd key) = showLambdaKey key
 
+--
 showType (Var _) = "V"
 showType (Bnd _) = "B"
 showType (Fun _ _) = "F"
 showType (App _ _) = "A"
 
+--
 showHaskell (Fun bnd body) = mconcat ["(\\", showLambdaKey bnd, " -> ", showHaskell body, ")"]
 showHaskell (App lt rt) = mconcat ["(", showHaskell lt, " ", showHaskell rt, ")"]
 showHaskell x = showLambda x
+
+#if defined DEBUG
+showLambdaAKey = id
+
+showLambdaA (Fun bnd body) = mconcat ["(λ", showLambdaAKey bnd, ".", showLambdaA body, ")"]
+showLambdaA (App lt rt) = mconcat ["(", showLambdaA lt, " ", showLambdaA rt, ")"]
+showLambdaA (Var key) = showLambdaAKey key
+showLambdaA (Bnd key) = showLambdaAKey key
+#endif
 
 
 -- #--------------------------------------------------------------------------
@@ -97,13 +114,11 @@ executeStmts :: [Stmt] -> IO ()
 executeStmts stmts = do
     putStrLn $ mconcat ["# ACCEPTED ", show (length stmts), " STATEMENTS"]
 
-    either fail (uncurry executeExprs) $ toExprs stmts
+    either fail (uncurry evalExprs) $ toExprs stmts
 
 
--- #define DEBUG (1)
-
-executeExprs :: [NamedTerm] -> [Term] -> IO ()
-executeExprs defs exprs = do
+evalExprs :: [NamedTerm] -> [Term] -> IO ()
+evalExprs defs exprs = do
 #if defined DEBUG
     putStrLn "---------- haskell ----------"
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> show . snd)) defs
@@ -121,21 +136,16 @@ executeExprs defs exprs = do
     traverse_ (putStrLn . showLambda) exprs
     putStrLn ""
     traverse_ (putStrLn . showHaskell) exprs
-
 #else
     putStrLn $ mconcat ["MACRO: ", show (length defs)]
     putStrLn $ mconcat ["EXPRESSION: ", show (length exprs)]
-
 #endif
-
     putStrLn ""
 
     -- マクロの展開
-
     let eExprs = map (extract defs) exprs
 
     -- α変換
-
     let (aExprs, _) = MS.runState (traverse (alpha []) eExprs) 0
 
 #if defined DEBUG
@@ -146,9 +156,9 @@ executeExprs defs exprs = do
     debugPrint21 "beta"
 #endif
 
+    -- β簡約
     for_ (zip [0..] aExprs) $ \(i, aExpr) -> do
-
-        -- β簡約
+        -- (最終形, [途中経過])
         let (bExpr, bExprs) = MW.runWriter (repeatWhileChanging aExpr)
 
         putStrLn $ mconcat [replicate 10 '-', " EXPRESSION[", show (i + 1), "] ", replicate 10 '-']
@@ -160,6 +170,10 @@ executeExprs defs exprs = do
         putStrLn $ mconcat ["LAMBDA: ", showLambda (aExprs !! i)]
         putStrLn ""
 
+#if defined DEBUG
+        putStrLn $ mconcat ["LAMBDA(α): ", showLambdaA (aExprs !! i)]
+        putStrLn ""
+#endif
 
         putStrLn "# BETA REDUCTION"
         traverse_ (\(j, l) -> putStrLn $ mconcat ["{", show j, "} ", showLambda l]) $ zip [1..] bExprs
@@ -168,14 +182,15 @@ executeExprs defs exprs = do
 
         putStrLn "# OUTPUT"
         putStrLn $ mconcat ["LAMBDA: ", showLambda bExpr]
-
         putStrLn ""
+
+#if defined DEBUG
+        putStrLn $ mconcat ["LAMBDA(α): ", showLambdaA bExpr]
+        putStrLn ""
+#endif
+
         putStrLn $ mconcat ["Haskell: ", showHaskell bExpr]
-
         putStrLn ""
-
-
-    --putStrLn "---------- done ----------"
 
 
 repeatWhileChanging :: Term -> MW.Writer [Term] Term
@@ -235,16 +250,20 @@ debugPrint22 t b = do
 
 beta :: Term -> Term
 
+-- (\x. M) N の場合は M 中に含まれる x (ex. Bnd "f{15}") を N に置き換え
 beta (App lt@(Fun bnd body) rt) = repBody bnd (beta rt) (beta body)
 
+-- (M N) の場合は両方を簡約
 beta (App lt rt) = App (beta lt) (beta rt)
 
+-- (\x. M) の場合は M を簡約
 beta (Fun bnd body) = Fun bnd (beta body)
 
+-- それ以外は変化なし
 beta org = org
 
 
--- # replace function body
+-- 関数本体中の Bnd "f{15}" を再帰的に val で置き換え
 
 repBody :: String -> Term -> Term -> Term
 
@@ -273,12 +292,13 @@ alpha :: [(String, String)] -> Term -> MS.State Int Term
 alpha db (App lt rt) = App <$> alpha db lt <*> alpha db rt
 
 alpha db (Fun bnd body) = do
-    -- ラムダ抽象の引数 (ex. "f") を一意の名前 (ex. "f{15}") に置き換える
+    -- 引数 (ex. "f") を一意の名前 (ex. "f{15}") に置き換え
     newId <- genId
 
     let bnd' = bnd ++ ('{' : (show newId ++ "}"))
     let db' = (bnd, bnd'):db
 
+    -- 関数本体の Var "f" を Bnd "f{15}" に置き換え
     Fun bnd' <$> alpha db' body
 
 alpha db org@(Var key) = return . maybe org Bnd $ lookup key db
@@ -306,33 +326,44 @@ extract db org@(Var key) = maybe org (extract db) $ lookup key db
 -- #--------------------------------------------------------------------------
 
 separator = P.oneOf " \t"
+
 skipSpaces = void (P.skipMany separator)
-
-parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
-
-parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
 
 eol = P.char '\n'
 
 literal c = P.char c <* skipSpaces
 
+--
 parser = (catMaybes <$> P.many parseStmt) <* P.eof
 
 parseStmt = skipSpaces *>
-    (P.try parseDefine <|> commentLine <|> parseExpr <|> emptyLine) <* eol
+    (P.try parseDefine <|> parseComment <|> parseExpr <|> parseEmpty) <* eol
 
-parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseApp
+{-
+parseDefine = do
+    ident <- parseIdent
+    literal '='
+    apply <- parseApp
+
+    return $ Just $ Define (ident, apply)
+-}
+parseDefine = Just . Define <$> ((,) <$> (parseIdent <* literal '=') <*> parseApp)
+--parseDefine = ((Just . Define) .) . (,) <$> (parseIdent <* literal '=') <*> parseApp
 
 parseExpr = Just . Expr <$> parseApp
 
-commentLine = Nothing <$ (P.string "--" *> P.many (P.noneOf "\n"))
+parseComment = Nothing <$ (P.string "--" *> P.many (P.noneOf "\n"))
 
-emptyLine = Nothing <$ skipSpaces
+parseEmpty = Nothing <$ skipSpaces
 
+--
 parseApp = do
     term <- parseTerm
     foldl App term <$> P.many1 parseTerm <|> return term
 
+parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
+
+--
 parseTerm = parseNested <|> parseFun <|> parseVar
 
 parseNested = literal '(' *> parseApp <* literal ')'
@@ -349,6 +380,10 @@ parseFun = do
 
     return $ foldl (flip Fun) (Fun s apply) ss
 
+--
+parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
+
+--parseVar :: P.Parsec String () Term
 parseVar = Var <$> parseIdent
 
 
@@ -358,6 +393,7 @@ parseVar = Var <$> parseIdent
 -- #
 -- #--------------------------------------------------------------------------
 
+main :: IO ()
 main = do
     input <- readFile "example.lmd"
 
@@ -370,13 +406,12 @@ main = do
     putStrLn "# ALL DONE"
 
 
+#if defined TEST
 -- #--------------------------------------------------------------------------
 -- #
 -- #        tests
 -- #
 -- #--------------------------------------------------------------------------
-
-evalWriter m = fst (MW.runWriter m)
 
 testMacros = [
     "c0 = (λf.(λx.x))",
@@ -410,8 +445,10 @@ testMacros = [
     ""                                                      -- need!
     ]
 
-evalOne :: String -> Term
+evalWriter :: MW.Writer w a -> a
+evalWriter m = fst (MW.runWriter m)
 
+evalOne :: String -> Term
 evalOne stmt = do
     let input = mconcat $ intersperse "\n" (stmt:testMacros)
     let (Right stmts) = P.parse parser "(test1)" input
@@ -422,7 +459,7 @@ evalOne stmt = do
 
     head bExprs
 
-
+expectEqual :: String -> String -> TU.Test
 expectEqual stmt expected = expected TU.~=? (showLambda . evalOne $ stmt)
 
 
@@ -497,6 +534,8 @@ t = do
         ]
 
     putStrLn ""
+
+#endif
 
 
 -- EOF

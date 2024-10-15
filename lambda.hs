@@ -194,21 +194,6 @@ evalExprs defs exprs = do
         putStrLn ""
 
 
-repeatWhileChanging :: Term -> MW.Writer [Term] Term
-repeatWhileChanging aExpr = do
-    -- β簡約前後が一致するまで繰り返す
-
-    let bExpr = beta aExpr
-
-    if aExpr == bExpr then do
-        return bExpr
-
-        else do
-            MW.tell [bExpr]
-
-            repeatWhileChanging bExpr
-
-
 #if defined DEBUG
 pPrint :: Show a => a -> IO ()
 pPrint = putStrLn . ppShow
@@ -265,7 +250,6 @@ beta org = org
 
 
 -- 関数本体中の Bnd "f{15}" を再帰的に val で置き換え
-
 repBody :: String -> Term -> Term -> Term
 
 repBody srch val (App lt rt) =
@@ -278,6 +262,21 @@ repBody srch val (Bnd key)
 
 repBody _ _ org = org
 
+
+-- 簡約の前後が一致するまで繰り返す
+repeatWhileChanging :: Term -> MW.Writer [Term] Term
+
+repeatWhileChanging aExpr = do
+
+    let bExpr = beta aExpr
+
+    if aExpr == bExpr then do
+        return bExpr
+
+        else do
+            MW.tell [bExpr]
+
+            repeatWhileChanging bExpr
 
 -- #--------------------------------------------------------------------------
 -- #

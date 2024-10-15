@@ -50,12 +50,18 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 -- REDUCTION
 --
 
+first (pair c5 c6)
+secnd (pair c5 c6)
+
 --(\f. \x. \f. f x)
 --(\f. f) (\x. x)
 --(\f.\x. f x) (\y.y) z
 --(\fg. f g) (\a. a) (\b. b x) h
 
 --and true false
+--and true true
+--or true false
+--or true true
 
 --c3
 --pred (λf.(λx.(f (f x))))
@@ -85,9 +91,12 @@ cons  = \x. \l. (\c. \n. c x (l c n))
 --tmp = if true (pred c1) (plus c3 c2)
 --if (iszero tmp) (plus c7 c8) (c4)
 
+--if (iszero (pred c2)) (plus c7 c8) (c4)
+--if (iszero (pred c1)) (plus c7 c8) (c4)
+
 --<plus><c3>(<plus><c1><c2>)
 --plus c3 (plus c1 c2)
-mult (pred c3) (plus c3 (plus c1 c2))
+--mult (pred c3) (plus c3 (plus c1 c2))
 
 --mult c2 c3
 
@@ -95,6 +104,7 @@ mult (pred c3) (plus c3 (plus c1 c2))
 --(\x. x x) (\x. x x)
 
 
+--<cons><c1>(<cons><c2>(<cons><c3><nil>))
 --cons c1 (cons c2 (cons c3 nil))
 --(λc. λn. c c1 (c c2 (c c3 n)))
 
@@ -102,6 +112,7 @@ mult (pred c3) (plus c3 (plus c1 c2))
 --(\m. \n. \f. \x. m (n f) x) (\f. \x. f (f x)) (\f. \x. f (f (f x)))
 
 
+--pred c2
 --pred c3
 
 

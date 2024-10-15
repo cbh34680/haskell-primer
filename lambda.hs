@@ -11,6 +11,7 @@
 -- #define DEBUG (1)
 #define TEST (1)
 
+import System.IO
 import Control.Applicative ((<|>))
 import Control.Monad (void, when)
 import Control.Arrow (first, second)
@@ -461,6 +462,12 @@ evalOne stmt = do
 
 expectEqual :: String -> String -> TU.Test
 expectEqual stmt expected = expected TU.~=? (showLambda . evalOne $ stmt)
+
+
+tw :: IO ()
+tw = do
+    withFile "example.lmd" WriteMode $ \h -> hPutStrLn h . mconcat $
+            intersperse "\n" (testMacros ++ ["plus c2 c3", "pred c8"])
 
 
 t :: IO ()

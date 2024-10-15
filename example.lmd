@@ -1,125 +1,31 @@
---
--- https://ja.wikipedia.org/wiki/%E3%83%A9%E3%83%A0%E3%83%80%E8%A8%88%E7%AE%97
--- https://zenn.dev/openlogi/articles/introduction-to-lambda-calculus
--- https://nikosai.github.io/lambda-friends/
---
--- DEFINE
---
-c0    = \f. \x. x
-c1    = succ c0
-c2    = succ c1
-c3    = succ c2
-c4    = succ c3
-c5    = succ c4
-c6    = succ c5
-c7    = succ c6
-c8    = succ c7
-c9    = succ c8
+c0 = (λf.(λx.x))
+c1 = (succ c0)
+c2 = (succ c1)
+c3 = (succ c2)
+c4 = (succ c3)
+c5 = (succ c4)
+c6 = (succ c5)
+c7 = (succ c6)
+c8 = (succ c7)
+c9 = (succ c8)
+succ = (λn.(λf.(λx.(f ((n f) x)))))
+pred = (λn.(λf.(λx.(((n (λg.(λh.(h (g f))))) (λu.x)) (λu.u)))))
+const = (λa.(λb.a))
+id = (λa.a)
+true = (λx.(λy.x))
+false = (λx.(λy.y))
+and = (λp.(λq.((p q) false)))
+or = (λp.(λq.((p true) q)))
+not = (λp.((p false) true))
+if = (λp.(λx.(λy.((p x) y))))
+iszero = (λn.((n (λx.false)) true))
+plus = (λm.(λn.((m succ) n)))
+mult = (λm.(λn.(λf.(n (m f)))))
+pair = (λf.(λs.(λb.((b f) s))))
+first = (λp.(p true))
+secnd = (λp.(p false))
+nil = (λc.(λn.n))
+cons = (λx.(λl.(λc.(λn.((c x) ((l c) n))))))
 
-succ  = \n. \f. \x. f (n f x)
-
-pred  = \n. \f. \x. n (\g. \h. h (g f)) (\u. x) (\u. u)
---pred =    \n. \s. \z. n (\x. \y. y (x s)) (\x. z) (\x. x)
-
-const = \a. \b. a
---const = true
-id    = \a. a
-
-true = \x. \y. x
-false = \x. \y. y
-
-and = \p. \q. p q false
-or = \p. \q. p true q
-not = \p. p false true
-if = \p. \x. \y. p x y
-
-iszero = \n. n (\x. false) true
-
---plus = \m. \n. \f. \x. m f (n f x)
-plus = \m. \n. m succ n
-
-mult = \mnf. n(m f)
-
-pair  = \f. \s. \b. b f s
-first = \p. p true
-secnd = \p. p false
-nil   = \c. \n. n
-cons  = \x. \l. (\c. \n. c x (l c n))
-
---
--- REDUCTION
---
-
-first (pair c5 c6)
-secnd (pair c5 c6)
-
---(\f. \x. \f. f x)
---(\f. f) (\x. x)
---(\f.\x. f x) (\y.y) z
---(\fg. f g) (\a. a) (\b. b x) h
-
---and true false
---and true true
---or true false
---or true true
-
---c3
---pred (λf.(λx.(f (f x))))
---pred c3
---iszero c0
---iszero c1
---true
-
-
---(\fab. f a b) plus c1 c2
---(\ab. plus a b) c1 c2
-
---succ c0
---c1
---c2
---plus c4 c5
-
-
---const c1 c2
---id c1
-
---const id c1 c2
-
---(λa. λb. a b) (λc. c) c1
---(λa. a) (λb. b) ((λc. c) c1)
-
---tmp = if true (pred c1) (plus c3 c2)
---if (iszero tmp) (plus c7 c8) (c4)
-
---if (iszero (pred c2)) (plus c7 c8) (c4)
---if (iszero (pred c1)) (plus c7 c8) (c4)
-
---<plus><c3>(<plus><c1><c2>)
---plus c3 (plus c1 c2)
---mult (pred c3) (plus c3 (plus c1 c2))
-
---mult c2 c3
-
--- 発散
---(\x. x x) (\x. x x)
-
-
---<cons><c1>(<cons><c2>(<cons><c3><nil>))
---cons c1 (cons c2 (cons c3 nil))
---(λc. λn. c c1 (c c2 (c c3 n)))
-
---(λm. λn. λf. λx. m f (n f x)) (λf. λx. f (f x)) (λf. λx. f (f (f x)))
---(\m. \n. \f. \x. m (n f) x) (\f. \x. f (f x)) (\f. \x. f (f (f x)))
-
-
---pred c2
---pred c3
-
-
---(\gh.h(g f))   ((\gh.h(g f)) (\u.x))
--- OK: (λh.h(f x))
--- NG: (λh.(h gf))
-
-
-
--- EOF
+plus c2 c3
+pred c8

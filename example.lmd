@@ -26,6 +26,10 @@ first = (λp.(p true))
 secnd = (λp.(p false))
 nil = (λc.(λn.n))
 cons = (λx.(λl.(λc.(λn.((c x) ((l c) n))))))
+Y = (λf. (λx. f(x x)) (λx. f(x x)))
+-- alias
+car = true
+cdr = false
 
 plus c2 c3
 pred c8

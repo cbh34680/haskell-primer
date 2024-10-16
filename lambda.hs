@@ -20,6 +20,7 @@ import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes, isJust, fromJust)
 import Data.List ((\\), group, sort, intersperse)
 import Data.List.Extra (notNull)
+import Debug.Trace (trace)
 
 import qualified Text.Parsec as P
 import qualified Control.Monad.State as MS
@@ -296,7 +297,6 @@ repBody _ _ org = org
 repeatWhileChanging :: Term -> MW.Writer [Term] Term
 
 repeatWhileChanging aExpr = do
-
     let bExpr = beta aExpr
 
     if aExpr == bExpr then do
@@ -391,10 +391,7 @@ parseApp = do
     term <- parseTerm
     foldl App term <$> P.many1 parseTerm <|> return term
 
-parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
-
---
-parseTerm = parseNested <|> parseFun <|> parseVar
+parseTerm = parseNested <|> parseFun <|> parseVar <|> parseNumber
 
 parseNested = literal '(' *> parseApp <* literal ')'
 
@@ -410,11 +407,23 @@ parseFun = do
 
     return $ foldl (flip Fun) (Fun s apply) ss
 
---
-parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
-
 --parseVar :: P.Parsec String () Term
 parseVar = Var <$> parseIdent
+
+parseNumber = do
+    -- 数値のみの場合はチャーチ数に変換する
+    cs <- P.many1 P.digit
+    skipSpaces
+
+    let n = (read :: (String -> Int)) cs
+    let body = foldr (\x acc -> App x acc) (Var "x") $ replicate n (Var "f")
+
+    return $ Fun "f" (Fun "x" body)
+
+--
+parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
+
+parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
 
 
 -- #--------------------------------------------------------------------------
@@ -490,7 +499,7 @@ testMacros = [
 
 tw :: IO ()
 tw = do
-    let outs = testMacros ++ ["plus c2 c3", "pred c8"]
+    let outs = testMacros ++ ["plus c2 3", "pred c8"]
 
     withFile "example.lmd" WriteMode $
         \h -> hPutStrLn h . mconcat $ intersperse "\n" outs
@@ -583,6 +592,9 @@ t = do
 
         ,"test-18"  ~: expectEqual  "pair (pair a b) c car car"
                                     "a"
+
+        ,"test-19"  ~: expectEqual  "plus 3 3"
+                                    "(λf.(λx.(f (f (f (f (f (f x))))))))"
 
 
 

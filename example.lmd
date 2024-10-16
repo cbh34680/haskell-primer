@@ -31,5 +31,5 @@ Y = (λf. (λx. f(x x)) (λx. f(x x)))
 car = true
 cdr = false
 
-plus c2 c3
+plus c2 3
 pred c8

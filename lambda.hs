@@ -9,6 +9,7 @@
 import System.IO
 import Control.Applicative ((<|>))
 import Control.Monad (void, when)
+import Control.Monad.Extra (whenJust)
 import Control.Arrow (first, second)
 
 --import GHC.Generics (Generic)
@@ -218,6 +219,46 @@ evalExprs defs exprs = do
 
         putStrLn $ mconcat ["Haskell: ", showHaskell bExpr]
         putStrLn ""
+
+        whenJust (toChurchNum bExpr) $ \n -> do
+            putStrLn $ mconcat ["Church Numericals: ", show n]
+            putStrLn ""
+
+        whenJust (toChurchBool bExpr) $ \b -> do
+            putStrLn $ mconcat ["Church Booleans: ", show b]
+            putStrLn ""
+
+
+-- チャーチ真理値に変換
+toChurchBool :: Term -> Maybe Bool
+
+toChurchBool (Fun bndx (Fun bndy (Bnd v)))
+    | bndx == v = return True
+    | bndy == v = return False
+
+toChurchBool _ = Nothing
+
+
+-- チャーチ数に変換
+toChurchNum :: Term -> Maybe Int
+
+toChurchNum (Fun _ (Fun bndx (Bnd x)))
+    | bndx == x = return 0
+
+toChurchNum (Fun bndf (Fun bndx app@(App _ _))) = cntBndf bndf bndx app
+
+toChurchNum _ = Nothing
+
+
+cntBndf :: String -> String -> Term -> Maybe Int
+
+cntBndf bndf bndx (App (Bnd f) app@(App _ _))
+    | bndf == f = (+1) <$> cntBndf bndf bndx app
+
+cntBndf bndf bndx (App (Bnd f) (Bnd x))
+    | bndf == f && bndx == x = return 1
+
+cntBndf _ _ org = Nothing
 
 
 #if defined DEBUG
@@ -489,6 +530,7 @@ testMacros = [
     "nil = (λc.(λn.n))",
     "cons = (λx.(λl.(λc.(λn.((c x) ((l c) n))))))",
     "Y = (λf. (λx. f(x x)) (λx. f(x x)))",
+    "",
     "-- alias",
     "car = true",
     "cdr = false",

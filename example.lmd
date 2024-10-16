@@ -13,7 +13,7 @@ pred = (λn.(λf.(λx.(((n (λg.(λh.(h (g f))))) (λu.x)) (λu.u)))))
 const = (λa.(λb.a))
 id = (λa.a)
 true = (λx.(λy.x))
-false = (λx.(λy.y))
+-- false = (λx.(λy.y))
 and = (λp.(λq.((p q) false)))
 or = (λp.(λq.((p true) q)))
 not = (λp.((p false) true))
@@ -27,9 +27,13 @@ secnd = (λp.(p false))
 nil = (λc.(λn.n))
 cons = (λx.(λl.(λc.(λn.((c x) ((l c) n))))))
 Y = (λf. (λx. f(x x)) (λx. f(x x)))
+
 -- alias
+false = 0
 car = true
 cdr = false
 
 plus c2 3
 pred c8
+iszero (pred c2)
+iszero (pred c1)

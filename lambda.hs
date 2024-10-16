@@ -8,8 +8,8 @@
 
 import System.IO
 import Control.Applicative ((<|>))
-import Control.Monad (void, when)
-import Control.Monad.Extra (whenJust)
+import Control.Monad (void, when, (<=<))
+--import Control.Monad.Extra (whenJust)
 import Control.Arrow (first, second)
 
 --import GHC.Generics (Generic)
@@ -220,13 +220,16 @@ evalExprs defs exprs = do
         putStrLn $ mconcat ["Haskell: ", showHaskell bExpr]
         putStrLn ""
 
-        whenJust (toChurchNum bExpr) $ \n -> do
-            putStrLn $ mconcat ["Church Numericals: ", show n]
-            putStrLn ""
+        putStrLn . mconcat . intersperse "\n" . catMaybes $ flip sequenceA bExpr
+            [withT "Church Numericals:" <=< toChurchNum
+            ,withT "Church Booleans: "  <=< toChurchBool]
 
-        whenJust (toChurchBool bExpr) $ \b -> do
-            putStrLn $ mconcat ["Church Booleans: ", show b]
-            putStrLn ""
+        putStrLn ""
+
+
+-- 出力補助
+withT :: (Monad m, Show a) => String -> a -> m String
+withT t x = return $ mconcat [t, show x]
 
 
 -- チャーチ真理値に変換

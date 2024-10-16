@@ -1,8 +1,3 @@
--- {-# LANGUAGE DeriveFunctor #-}
--- {-# LANGUAGE Strict #-}
--- {-# LANGUAGE StrictData #-}
--- {-# LANGUAGE OverloadedStrings #-}
-
 {-# LANGUAGE CPP #-}
 
 -- (ghci)
@@ -94,6 +89,15 @@ showLambdaA (Bnd key) = showLambdaAKey key
 -- #
 -- #--------------------------------------------------------------------------
 
+{-
+    Parsec で構築した Stmt をマクロ定義 (NamedTerm) と実行式 (Term) に分ける
+
+    NAME = EXPR ... マクロ定義
+        ex) "succ = (λn.(λf.(λx.(f ((n f) x)))))"
+
+    EXPR ... 実行式
+        ex) "plus c2 c3"
+-}
 toExprs :: [Stmt] -> Result ([NamedTerm], [Term])
 toExprs stmts = do
     let isExpr :: Stmt -> Bool
@@ -103,6 +107,7 @@ toExprs stmts = do
     let exprs = filter isExpr stmts
     let defs = map (\(Define x) -> x) $ stmts \\ exprs
 
+    -- マクロ定義名の重複チェック
     let dups = map (!! 0) . filter ((> 1) . length) . group . sort $ map fst defs
     when (notNull dups) (Left $ mconcat ["duplicate defines (", show dups, ")"])
 
@@ -111,6 +116,7 @@ toExprs stmts = do
     return (defs, exprs')
 
 
+-- Stmt の分類が成功したら式を実行する
 executeStmts :: [Stmt] -> IO ()
 executeStmts stmts = do
     putStrLn $ mconcat ["# ACCEPTED ", show (length stmts), " STATEMENTS"]
@@ -118,6 +124,13 @@ executeStmts stmts = do
     either fail (uncurry evalExprs) $ toExprs stmts
 
 
+{-
+    式の実行
+        1) マクロの展開
+        2) α変換
+        3) β簡約
+        4) 表示
+-}
 evalExprs :: [NamedTerm] -> [Term] -> IO ()
 evalExprs defs exprs = do
 #if defined DEBUG
@@ -143,10 +156,12 @@ evalExprs defs exprs = do
 #endif
     putStrLn ""
 
-    -- マクロの展開
+    -- [マクロの展開]
+    -- "c1" を (\f.(\x.f(x)) に置換
     let eExprs = map (extract defs) exprs
 
-    -- α変換
+    -- [α変換]
+    -- (\f.(\x.(f(x)))) を (\f{1}.(\x{2}.f{1}(x{2}))) に書き換え
     let (aExprs, _) = MS.runState (traverse (alpha []) eExprs) 0
 
 #if defined DEBUG
@@ -157,7 +172,17 @@ evalExprs defs exprs = do
     debugPrint21 "beta"
 #endif
 
-    -- β簡約
+    {- [β簡約]
+       (\f{1}.(\x{2}.f{1}(x{2}))) A B のとき
+
+        --> (\f{1}.(\x{2}.f{1}(x{2}))) A B
+        --> (A.(\x{2}.A(x{2}))) B
+        --> (\x{2}.A(x{2})) B
+        --> (B.A(B))
+        --> A(B)
+
+        のように引数を関数に適用していく
+    -}
     for_ (zip [0..] aExprs) $ \(i, aExpr) -> do
         -- (最終形, [途中経過])
         let (bExpr, bExprs) = MW.runWriter (repeatWhileChanging aExpr)
@@ -234,6 +259,10 @@ debugPrint22 t b = do
 -- #
 -- #--------------------------------------------------------------------------
 
+{-
+    引数がある関数適用 ((\x. M) N) の場合は関数本体 M 中の x を N に置き換えし
+    引数のない関数の場合は、本体 M を再帰的に簡約する
+-}
 beta :: Term -> Term
 
 -- (\x. M) N の場合は M 中に含まれる x (ex. Bnd "f{15}") を N に置き換え
@@ -284,25 +313,25 @@ repeatWhileChanging aExpr = do
 -- #
 -- #--------------------------------------------------------------------------
 
-genId :: MS.State Int Int
-genId = MS.modify (+1) >> MS.get
-
+-- 関数の引数 (ex. "f") を一意の名前 (ex. "f{15}") に置換
 alpha :: [(String, String)] -> Term -> MS.State Int Term
 
 alpha db (App lt rt) = App <$> alpha db lt <*> alpha db rt
 
 alpha db (Fun bnd body) = do
-    -- 引数 (ex. "f") を一意の名前 (ex. "f{15}") に置き換え
     newId <- genId
 
     let bnd' = bnd ++ ('{' : (show newId ++ "}"))
     let db' = (bnd, bnd'):db
 
-    -- 関数本体の Var "f" を Bnd "f{15}" に置き換え
+    -- 関数本体中の Var "f" を Bnd "f{15}" に(再帰的)置換
     Fun bnd' <$> alpha db' body
 
 alpha db org@(Var key) = return . maybe org Bnd $ lookup key db
 
+--
+genId :: MS.State Int Int
+genId = MS.modify (+1) >> MS.get
 
 -- #--------------------------------------------------------------------------
 -- #
@@ -310,6 +339,7 @@ alpha db org@(Var key) = return . maybe org Bnd $ lookup key db
 -- #
 -- #--------------------------------------------------------------------------
 
+-- plus, const などのマクロ定義を実際の関数に置換
 extract :: [(String, Term)] -> Term -> Term
 
 extract db (App lt rt) = App (extract db lt) (extract db rt)
@@ -413,6 +443,13 @@ main = do
 -- #
 -- #--------------------------------------------------------------------------
 
+{-
+    ghci を起動して
+        :l lambda.hs    このファイルを読み込み
+        t               テストを実行
+        tw              "example.lmd" を生成 
+        :main           "example.lmd" の内容を評価
+-}
 testMacros = [
     "c0 = (λf.(λx.x))",
     "c1 = (succ c0)",
@@ -445,13 +482,22 @@ testMacros = [
     ""                                                      -- need!
     ]
 
+tw :: IO ()
+tw = do
+    let outs = testMacros ++ ["plus c2 c3", "pred c8"]
+
+    withFile "example.lmd" WriteMode $
+        \h -> hPutStrLn h . mconcat $ intersperse "\n" outs
+
+    putStrLn $ mconcat [show (length outs), " lines were output."]
+
 evalWriter :: MW.Writer w a -> a
 evalWriter m = fst (MW.runWriter m)
 
 evalOne :: String -> Term
 evalOne stmt = do
     let input = mconcat $ intersperse "\n" (stmt:testMacros)
-    let (Right stmts) = P.parse parser "(test1)" input
+    let (Right stmts) = P.parse parser "(src)" input
     let (Right (defs, exprs)) = toExprs stmts
     let eExprs = map (extract defs) exprs
     let aExprs = MS.evalState (traverse (alpha []) eExprs) 0
@@ -461,13 +507,6 @@ evalOne stmt = do
 
 expectEqual :: String -> String -> TU.Test
 expectEqual stmt expected = expected TU.~=? (showLambda . evalOne $ stmt)
-
-
-tw :: IO ()
-tw = do
-    withFile "example.lmd" WriteMode $ \h -> hPutStrLn h . mconcat $
-            intersperse "\n" (testMacros ++ ["plus c2 c3", "pred c8"])
-
 
 t :: IO ()
 t = do

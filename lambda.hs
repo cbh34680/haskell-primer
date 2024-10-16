@@ -444,7 +444,7 @@ main = do
 -- #--------------------------------------------------------------------------
 
 {-
-    ghci を起動して
+    ghci>
         :l lambda.hs    このファイルを読み込み
         t               テストを実行
         tw              "example.lmd" を生成 
@@ -479,7 +479,13 @@ testMacros = [
     "secnd = (λp.(p false))",
     "nil = (λc.(λn.n))",
     "cons = (λx.(λl.(λc.(λn.((c x) ((l c) n))))))",
-    ""                                                      -- need!
+    "Y = (λf. (λx. f(x x)) (λx. f(x x)))",
+    "-- alias",
+    "car = true",
+    "cdr = false",
+
+
+    "" -- LAST: need!
     ]
 
 tw :: IO ()
@@ -494,9 +500,15 @@ tw = do
 evalWriter :: MW.Writer w a -> a
 evalWriter m = fst (MW.runWriter m)
 
-evalOne :: String -> Term
-evalOne stmt = do
-    let input = mconcat $ intersperse "\n" (stmt:testMacros)
+{-
+    ghci> eval "pred c2" 
+-}
+eval :: String -> IO ()
+eval cs = putStrLn . showLambda $ eval1 cs
+
+eval1 :: String -> Term
+eval1 cs = do
+    let input = mconcat $ intersperse "\n" (cs:testMacros)
     let (Right stmts) = P.parse parser "(src)" input
     let (Right (defs, exprs)) = toExprs stmts
     let eExprs = map (extract defs) exprs
@@ -506,7 +518,7 @@ evalOne stmt = do
     head bExprs
 
 expectEqual :: String -> String -> TU.Test
-expectEqual stmt expected = expected TU.~=? (showLambda . evalOne $ stmt)
+expectEqual actual expected = expected TU.~=? (showLambda . eval1 $ actual)
 
 t :: IO ()
 t = do
@@ -569,7 +581,8 @@ t = do
         ,"test-17"  ~: expectEqual  "secnd (pair c5 c6)"
                                     "(λf.(λx.(f (f (f (f (f (f x))))))))"
 
-
+        ,"test-18"  ~: expectEqual  "pair (pair a b) c car car"
+                                    "a"
 
 
 

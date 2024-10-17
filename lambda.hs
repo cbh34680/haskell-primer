@@ -220,16 +220,16 @@ evalExprs defs exprs = do
         putStrLn $ mconcat ["Haskell: ", showHaskell bExpr]
         putStrLn ""
 
-        putStrLn . mconcat . intersperse "\n" . catMaybes $ flip sequenceA bExpr
-            [withT "Church Numericals:" <=< toChurchNum
-            ,withT "Church Booleans: "  <=< toChurchBool]
+        putStrLn . mconcat . intersperse "\n" . catMaybes $ sequenceA
+            [withT "Church Numericals" <=< toChurchNum
+            ,withT "Church Booleans"   <=< toChurchBool] bExpr
 
         putStrLn ""
 
 
 -- 出力補助
 withT :: (Monad m, Show a) => String -> a -> m String
-withT t x = return $ mconcat [t, show x]
+withT t x = return $ mconcat [t, ": ", show x]
 
 
 -- チャーチ真理値に変換
@@ -460,7 +460,7 @@ parseNumber = do
     skipSpaces
 
     let n = (read :: (String -> Int)) cs
-    let body = foldr (\x acc -> App x acc) (Var "x") $ replicate n (Var "f")
+    let body = foldr App (Var "x") $ replicate n (Var "f")
 
     return $ Fun "f" (Fun "x" body)
 
@@ -544,10 +544,13 @@ testMacros = [
 
 tw :: IO ()
 tw = do
-    let outs = testMacros ++ ["plus c2 3", "pred c8"]
+    let outs = testMacros ++ ["plus c2 3", "const id 8 c9", "iszero (pred 1)"]
 
+    {-
     withFile "example.lmd" WriteMode $
         \h -> hPutStrLn h . mconcat $ intersperse "\n" outs
+    -}
+    writeFile "example.lmd" (mconcat (intersperse "\n" outs) ++ "\n")
 
     putStrLn $ mconcat [show (length outs), " lines were output."]
 

@@ -19,7 +19,7 @@ import Data.Foldable (traverse_, for_)
 import Data.Function ((&))
 import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes, isJust, fromJust)
-import Data.List ((\\), group, sort, intersperse)
+import Data.List ((\\), group, sort, intercalate)
 import Data.List.Extra (notNull)
 import Debug.Trace (trace)
 
@@ -220,7 +220,7 @@ evalExprs defs exprs = do
         putStrLn $ mconcat ["Haskell: ", showHaskell bExpr]
         putStrLn ""
 
-        putStrLn . mconcat . intersperse "\n" . catMaybes $ sequenceA
+        putStrLn . intercalate "\n" . catMaybes $ sequenceA
             [withT "Church Numericals" <=< toChurchNum
             ,withT "Church Booleans"   <=< toChurchBool] bExpr
 
@@ -548,9 +548,9 @@ tw = do
 
     {-
     withFile "example.lmd" WriteMode $
-        \h -> hPutStrLn h . mconcat $ intersperse "\n" outs
+        \h -> hPutStrLn h $ intercalate "\n" outs
     -}
-    writeFile "example.lmd" (mconcat (intersperse "\n" outs) ++ "\n")
+    writeFile "example.lmd" (intercalate "\n" outs ++ "\n")
 
     putStrLn $ mconcat [show (length outs), " lines were output."]
 
@@ -565,7 +565,7 @@ eval cs = putStrLn . showLambda $ eval1 cs
 
 eval1 :: String -> Term
 eval1 cs = do
-    let input = mconcat $ intersperse "\n" (cs:testMacros)
+    let input = intercalate "\n" (cs:testMacros)
     let (Right stmts) = P.parse parser "(src)" input
     let (Right (defs, exprs)) = toExprs stmts
     let eExprs = map (extract defs) exprs

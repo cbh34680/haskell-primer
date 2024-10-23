@@ -1,7 +1,0 @@
-cont_missing_prompt_err: Exception:
-
-GHC.Internal.Exts.control0#: no matching prompt in the current continuation
-
-Package: ghc-internal
-Module: GHC.Internal.Control.Exception.Base
-Type: NoMatchingContinuationPrompt

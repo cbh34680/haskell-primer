@@ -1,7 +1,0 @@
-allocLimit3: Exception:
-
-allocation limit exceeded
-
-Package: ghc-internal
-Module: GHC.Internal.IO.Exception
-Type: SomeAsyncException

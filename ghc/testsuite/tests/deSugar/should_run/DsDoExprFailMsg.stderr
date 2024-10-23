@@ -1,7 +1,0 @@
-DsDoExprFailMsg: Exception:
-
-user error (Pattern match failure in 'do' block at DsDoExprFailMsg.hs:2:3-8)
-
-Package: ghc-internal
-Module: GHC.Internal.IO.Exception
-Type: IOException

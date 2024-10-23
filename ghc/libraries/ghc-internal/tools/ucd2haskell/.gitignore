@@ -1,5 +1,0 @@
-ucd/
-tests/*.csv
-tests/export_all_chars
-*.hi
-*.o

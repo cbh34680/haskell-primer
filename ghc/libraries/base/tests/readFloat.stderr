@@ -1,7 +1,0 @@
-readFloat: Exception:
-
-Prelude.read: no parse
-
-Package: ghc-internal
-Module: GHC.Internal.Exception
-Type: ErrorCall

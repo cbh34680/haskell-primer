@@ -1,7 +1,0 @@
-compact_pinned: Exception:
-
-compaction failed: cannot compact pinned objects
-
-Package: ghc-internal
-Module: GHC.Internal.IO.Exception
-Type: CompactionFailed

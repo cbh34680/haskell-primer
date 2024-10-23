@@ -1,4 +1,0 @@
-
-T16326_Fail8.hs:7:10: error: [GHC-51580]
-    • Illegal visible, dependent quantification in the type of a term
-    • In an instance declaration

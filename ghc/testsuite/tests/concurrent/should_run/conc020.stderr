@@ -1,7 +1,0 @@
-conc020: Exception:
-
-I'm Interruptible
-
-Package: ghc-internal
-Module: GHC.Internal.Exception
-Type: ErrorCall

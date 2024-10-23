@@ -17,13 +17,25 @@ main = do
     putStrLn "<<<"
 
     print doExp1
-
     print $(qExp2)
-
     print $(qExp3)
 
-    let f = $(qExt4 "f")
+    let xx = $(qExt4 "f")
+    print xx
+
+    print $(qExp5)
+
+    let yy = $(qExp6 "fa3" [1,2,3])
+    print yy
+
+    zz <- runQ (qExp6 "fa3" [1,2,3])
+    print zz
 
     putStrLn "done."
 
 
+
+
+
+
+-- EOF

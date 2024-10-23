@@ -45,12 +45,23 @@ qExp6 :: String -> [Int] -> Q Exp
 qExp6 cs ns = do
     let fn = mkName cs
 
-    return $ foldl (\acc x -> AppE acc (LitE (IntegerL (fromIntegral x)))) (VarE fn) ns
+    --return $ foldl (\acc x -> AppE acc (LitE (IntegerL (fromIntegral x)))) (VarE fn) ns
+    foldl (\acc x -> appE acc (litE (integerL (fromIntegral x)))) (varE fn) ns
 
 
+qExp7 :: Q Exp
+qExp7 = do
+    let x = litE (integerL 10)
+    y <- [| $(x) + 1 |]
 
+    return y
 
+qExp8 :: Q Exp
+qExp8 = litE (stringL "aa")
 
+qExp9 :: IO Exp
+qExp9 = do
+    runQ [| 1 + 1 |]
 
 
 

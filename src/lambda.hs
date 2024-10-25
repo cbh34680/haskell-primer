@@ -468,7 +468,6 @@ parseNumber = do
     return $ Fun "f" (Fun "x" body)
 
 --
-parseIdent :: P.ParsecT String u Data.Functor.Identity.Identity [Char]
 parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
 
 parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces

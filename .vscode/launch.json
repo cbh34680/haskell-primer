@@ -28,7 +28,7 @@
             "request": "launch",
             "name": "this(stack)",
             "internalConsoleOptions": "openOnSessionStart",
-            "workspace": "${workspaceFolder}",
+            "workspace": "${fileDirname}",
             "startup": "${file}",
             "startupFunc": "",
             "startupArgs": "",

@@ -4,7 +4,7 @@
 -- :set -DDEBUG
 
 -- #define DEBUG (1)
-#define TEST (1)
+-- #define TEST (1)
 
 import System.IO
 import Control.Applicative ((<|>))
@@ -20,7 +20,7 @@ import Data.Function ((&))
 import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes, isJust, fromJust)
 import Data.List ((\\), group, sort, intercalate)
-import Data.List.Extra (notNull)
+--import Data.List.Extra (notNull)
 import Debug.Trace (trace)
 
 import qualified Text.Parsec as P
@@ -100,6 +100,8 @@ showLambdaA (Bnd key) = showLambdaAKey key
     EXPR ... 実行式
         ex) "plus c2 c3"
 -}
+notNull = not . null
+
 toExprs :: [Stmt] -> Result ([NamedTerm], [Term])
 toExprs stmts = do
     let isExpr :: Stmt -> Bool
@@ -403,7 +405,8 @@ separator = P.oneOf " \t"
 
 skipSpaces = void (P.skipMany separator)
 
-eol = P.char '\n'
+--eol = P.char '\n'
+eol = P.try (P.string "\r\n") <|> P.string "\n"
 
 literal c = P.char c <* skipSpaces
 
@@ -465,6 +468,7 @@ parseNumber = do
     return $ Fun "f" (Fun "x" body)
 
 --
+parseIdent :: P.ParsecT String u Data.Functor.Identity.Identity [Char]
 parseIdent = ((:) <$> P.letter <*> P.many (P.letter <|> P.digit)) <* skipSpaces
 
 parseArgs = P.many1 (P.satisfy isAsciiLower <|> P.char ' ') <* skipSpaces
@@ -489,7 +493,7 @@ main = do
     putStrLn "# ALL DONE"
 
 
-#if defined TEST
+
 -- #--------------------------------------------------------------------------
 -- #
 -- #        tests
@@ -500,7 +504,7 @@ main = do
     ghci>
         :l lambda.hs    このファイルを読み込み
         t               テストを実行
-        tw              "example.lmd" を生成 
+        tw              "example.lmd" を生成
         :main           "example.lmd" の内容を評価
 -}
 testMacros = [
@@ -554,11 +558,14 @@ tw = do
 
     putStrLn $ mconcat [show (length outs), " lines were output."]
 
+
+#if defined TEST
+
 evalWriter :: MW.Writer w a -> a
 evalWriter m = fst (MW.runWriter m)
 
 {-
-    ghci> eval "pred c2" 
+    ghci> eval "pred c2"
 -}
 eval :: String -> IO ()
 eval cs = putStrLn . showLambda $ eval1 cs

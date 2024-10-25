@@ -507,6 +507,7 @@ main = do
         :main           "example.lmd" の内容を評価
 -}
 testMacros = [
+    "-- macro",
     "c0 = (λf.(λx.x))",
     "c1 = (succ c0)",
     "c2 = (succ c1)",

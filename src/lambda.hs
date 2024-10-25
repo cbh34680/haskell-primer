@@ -162,7 +162,7 @@ evalExprs defs exprs = do
 
     -- [マクロの展開]
     -- "c1" を (\f.(\x.f(x)) に置換
-    let eExprs = map (extract defs) exprs
+    let eExprs = map (extract defs []) exprs
 
     -- [α変換]
     -- (\f.(\x.(f(x)))) を (\f{1}.(\x{2}.f{1}(x{2}))) に書き換え
@@ -386,13 +386,17 @@ genId = MS.modify (+1) >> MS.get
 -- #--------------------------------------------------------------------------
 
 -- plus, const などのマクロ定義を実際の関数に置換
-extract :: [(String, Term)] -> Term -> Term
+extract :: [(String, Term)] -> [String] -> Term -> Term
 
-extract db (App lt rt) = App (extract db lt) (extract db rt)
+extract db bnds (App lt rt) = App (extract db bnds lt) (extract db bnds rt)
 
-extract db (Fun bnd body) = Fun bnd (extract db body)
+extract db bnds (Fun bnd body) = Fun bnd (extract db (bnd:bnds) body)
 
-extract db org@(Var key) = maybe org (extract db) $ lookup key db
+--extract db bnds org@(Var key) = maybe org (extract db) $ lookup key db
+extract db bnds org@(Var key) =
+    -- 引数名の場合はマクロ展開対象外
+    if elem key bnds then org else
+        maybe org (extract db bnds) $ lookup key db
 
 
 -- #--------------------------------------------------------------------------
@@ -575,7 +579,7 @@ eval1 cs = do
     let input = intercalate "\n" (cs:testMacros)
     let (Right stmts) = P.parse parser "(src)" input
     let (Right (defs, exprs)) = toExprs stmts
-    let eExprs = map (extract defs) exprs
+    let eExprs = map (extract defs []) exprs
     let aExprs = MS.evalState (traverse (alpha []) eExprs) 0
     let bExprs = map (evalWriter . repeatWhileChanging) aExprs
 

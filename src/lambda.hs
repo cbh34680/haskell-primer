@@ -353,6 +353,7 @@ repeatWhileChanging aExpr = do
 
             repeatWhileChanging bExpr
 
+
 -- #--------------------------------------------------------------------------
 -- #
 -- #        alpha conversion
@@ -378,6 +379,7 @@ alpha db org@(Var key) = return . maybe org Bnd $ lookup key db
 --
 genId :: MS.State Int Int
 genId = MS.modify (+1) >> MS.get
+
 
 -- #--------------------------------------------------------------------------
 -- #
@@ -410,7 +412,7 @@ separator = P.oneOf " \t"
 skipSpaces = void (P.skipMany separator)
 
 --eol = P.char '\n'
-eol = P.try (P.string "\r\n") <|> P.string "\n"
+eol = P.string "\r\n" <|> P.string "\n"
 
 literal c = P.char c <* skipSpaces
 
@@ -433,7 +435,30 @@ parseDefine = Just . Define <$> ((,) <$> (parseIdent <* literal '=') <*> parseAp
 
 parseExpr = Just . Expr <$> parseApp
 
-parseComment = Nothing <$ (P.string "--" *> P.many (P.noneOf "\n"))
+--parseComment = Nothing <$ (P.string "--" *> P.many (P.noneOf "\n"))
+
+parseComment = Nothing <$ (P.string "--" *> P.many (P.noneOf "\r\n" <|> P.noneOf "\n"))
+
+{-
+parseComment = do
+    P.string "--"
+    P.many (P.noneOf "\r\n" <|> P.noneOf "\n")
+    return Nothing
+-}
+
+{-
+parseComment = parseComment1 <|> parseComment2
+
+parseComment1 = do
+    P.string "--"
+    P.many (P.noneOf "\r\n")
+    return Nothing
+
+parseComment2 = do
+    P.string "--"
+    P.many (P.noneOf "\n")
+    return Nothing
+-}
 
 parseEmpty = Nothing <$ skipSpaces
 
@@ -494,7 +519,6 @@ main = do
         Left err -> putStrLn "[parse error]" >> print err
 
     putStrLn "# ALL DONE"
-
 
 
 -- #--------------------------------------------------------------------------
@@ -558,7 +582,7 @@ tw = do
     withFile "example.lmd" WriteMode $
         \h -> hPutStrLn h $ intercalate "\n" outs
     -}
-    writeFile "example.lmd" (intercalate "\n" outs ++ "\n")
+    writeFile "example.lmd" (intercalate "\r\n" outs ++ "\r\n")
 
     putStrLn $ mconcat [show (length outs), " lines were output."]
 
@@ -576,7 +600,7 @@ eval cs = putStrLn . showLambda $ eval1 cs
 
 eval1 :: String -> Term
 eval1 cs = do
-    let input = intercalate "\n" (cs:testMacros)
+    let input = intercalate "\r\n" (cs:testMacros)
     let (Right stmts) = P.parse parser "(src)" input
     let (Right (defs, exprs)) = toExprs stmts
     let eExprs = map (extract defs []) exprs

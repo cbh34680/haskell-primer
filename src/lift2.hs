@@ -89,7 +89,6 @@ g4 cs = do
 
 --
 main = do
-    {-
     x1 <- runStateT (f1 >>= g1) 200
     print x1
     putStrLn ""
@@ -101,7 +100,6 @@ main = do
     x3 <- runReaderT (runStateT (f3 >>= g3) 200) 300
     print x3
     putStrLn ""
-    -}
 
     x4 <- runReaderT (runStateT (f4 >>= g4) 200) 300
     print x4
@@ -109,5 +107,16 @@ main = do
 
     putStrLn "done."
 
+{-
+ghci> :t runReaderT (runStateT (f4 >>= g4) 200) 300
+runReaderT (runStateT (f4 >>= g4) 200) 300 :: IO (String, Int)
+ghci> :t runStateT (f4 >>= g4) 200
+runStateT (f4 >>= g4) 200 :: ReaderT Int IO (String, Int)
+
+ghci> :t runReaderT (runStateT (f4 >>= g4) 200)
+runReaderT (runStateT (f4 >>= g4) 200) :: Int -> IO (String, Int)
+ghci> :t runStateT (f4 >>= g4)
+runStateT (f4 >>= g4) :: Int -> ReaderT Int IO (String, Int)
+-}
 
 -- EOF

@@ -75,14 +75,13 @@ showHaskell (Fun bnd body) = mconcat ["(\\", showLambdaKey bnd, " -> ", showHask
 showHaskell (App lt rt) = mconcat ["(", showHaskell lt, " ", showHaskell rt, ")"]
 showHaskell x = showLambda x
 
-#if defined DEBUG
+--
 showLambdaAKey = id
 
 showLambdaA (Fun bnd body) = mconcat ["(λ", showLambdaAKey bnd, ".", showLambdaA body, ")"]
 showLambdaA (App lt rt) = mconcat ["(", showLambdaA lt, " ", showLambdaA rt, ")"]
 showLambdaA (Var key) = showLambdaAKey key
 showLambdaA (Bnd key) = showLambdaAKey key
-#endif
 
 
 -- #--------------------------------------------------------------------------
@@ -200,10 +199,8 @@ evalExprs defs exprs = do
         putStrLn $ mconcat ["LAMBDA: ", showLambda (aExprs !! i)]
         putStrLn ""
 
-#if defined DEBUG
         putStrLn $ mconcat ["LAMBDA(α): ", showLambdaA (aExprs !! i)]
         putStrLn ""
-#endif
 
         putStrLn "# BETA REDUCTION"
         traverse_ (\(j, l) -> putStrLn $ mconcat ["{", show j, "} ", showLambda l]) $ zip [1..] bExprs
@@ -214,10 +211,8 @@ evalExprs defs exprs = do
         putStrLn $ mconcat ["LAMBDA: ", showLambda bExpr]
         putStrLn ""
 
-#if defined DEBUG
         putStrLn $ mconcat ["LAMBDA(α): ", showLambdaA bExpr]
         putStrLn ""
-#endif
 
         putStrLn $ mconcat ["Haskell: ", showHaskell bExpr]
         putStrLn ""

@@ -571,7 +571,10 @@ testMacros = [
 
 tw :: IO ()
 tw = do
-    let outs = testMacros ++ ["plus c2 3", "const id 8 c9", "iszero (pred 1)"]
+    let outs = testMacros ++ [
+                "plus c2 3",
+                "const id 8 c9",
+                "iszero (pred 1)"]
 
     {-
     withFile "example.lmd" WriteMode $

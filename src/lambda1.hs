@@ -3,21 +3,19 @@
 -- (ghci)
 -- :set -DDEBUG
 
-#define DEBUG (1)
+-- #define DEBUG (1)
 -- #define TEST (1)
 
 import System.IO
 import Control.Applicative ((<|>))
 import Control.Monad (void, when, (<=<))
-import Control.Monad.Trans.Class (lift)
 --import Control.Monad.Extra (whenJust)
 import Control.Arrow (first, second)
 
 --import GHC.Generics (Generic)
 --import Control.DeepSeq (NFData, deepseq)
 
-import Data.Either (isLeft, fromRight)
-import Data.Foldable (traverse_, for_, foldrM)
+import Data.Foldable (traverse_, for_)
 import Data.Function ((&))
 import Data.Char (isAsciiLower, isSpace)
 import Data.Maybe (catMaybes, isJust, fromJust)
@@ -27,7 +25,6 @@ import Debug.Trace (trace)
 
 import qualified Text.Parsec as P
 import qualified Control.Monad.State as MS
-import qualified Control.Monad.Reader as MR
 import qualified Control.Monad.Writer as MW
 
 #if defined DEBUG
@@ -44,12 +41,12 @@ import qualified Test.HUnit as TU
 data Term =
     Var String |
     Bnd String |
-    Macro String |
-    Label String |
-    Fun {mArg::String, mBody::Term} |
+    Fun {mKey::String, mBbody::Term} |
     App {mLT::Term, mRT::Term}
     deriving (Eq, Show)
+    --deriving (Eq, Show, Generic)
 
+--instance NFData Term
 
 data Stmt =
     Define NamedTerm |
@@ -66,14 +63,10 @@ showLambda (Fun bnd body) = mconcat ["(λ", showLambdaKey bnd, ".", showLambda b
 showLambda (App lt rt) = mconcat ["(", showLambda lt, " ", showLambda rt, ")"]
 showLambda (Var key) = showLambdaKey key
 showLambda (Bnd key) = showLambdaKey key
-showLambda (Macro key) = showLambdaKey key
-showLambda (Label key) = showLambdaKey key
 
 --
 showType (Var _) = "V"
 showType (Bnd _) = "B"
-showType (Macro _) = "M"
-showType (Label _) = "L"
 showType (Fun _ _) = "F"
 showType (App _ _) = "A"
 
@@ -89,8 +82,6 @@ showLambdaA (Fun bnd body) = mconcat ["(λ", showLambdaAKey bnd, ".", showLambda
 showLambdaA (App lt rt) = mconcat ["(", showLambdaA lt, " ", showLambdaA rt, ")"]
 showLambdaA (Var key) = showLambdaAKey key
 showLambdaA (Bnd key) = showLambdaAKey key
-showLambdaA (Macro key) = showLambdaAKey key
-showLambdaA (Label key) = showLambdaAKey key
 
 
 -- #--------------------------------------------------------------------------
@@ -110,8 +101,8 @@ showLambdaA (Label key) = showLambdaAKey key
 -}
 notNull = not . null
 
-stmtsToExprs :: [Stmt] -> Result ([NamedTerm], [Term])
-stmtsToExprs stmts = do
+toExprs :: [Stmt] -> Result ([NamedTerm], [Term])
+toExprs stmts = do
     let isExpr :: Stmt -> Bool
         isExpr (Expr _) = True
         isExpr _ = False
@@ -133,145 +124,104 @@ executeStmts :: [Stmt] -> IO ()
 executeStmts stmts = do
     putStrLn $ mconcat ["# ACCEPTED ", show (length stmts), " STATEMENTS"]
 
-    case stmtsToExprs stmts of
-        Left msg -> error msg
-
-        Right (defs, exprs) -> do
-
-            -- 1) α変換
-            let defkeys = map fst defs
-
-            let t = MR.runReader (MS.evalStateT (alphaConversion defs exprs) 0) defkeys
-            --uncurry (debugPrint "alpha") t
-
-            -- 2) β簡約
-            -- 3) 表示
-            uncurry betaReduction t
+    either fail (uncurry evalExprs) $ toExprs stmts
 
 
---
+{-
+    式の実行
+        1) マクロの展開
+        2) α変換
+        3) β簡約
+        4) 表示
+-}
+evalExprs :: [NamedTerm] -> [Term] -> IO ()
+evalExprs defs exprs = do
+#if defined DEBUG
+    putStrLn "---------- haskell ----------"
+    traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> show . snd)) defs
+    putStrLn ""
+    traverse_ print exprs
+    putStrLn ""
+    putStrLn "---------- define ----------"
+    traverse_ (putStrLn . ((\k v -> k ++ " = " ++ v) <$> fst <*> showLambda . snd)) defs
+    putStrLn ""
+    traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showHaskell . snd)) defs
+    putStrLn ""
+    putStrLn "---------- expr ----------"
+    pPrint exprs
+    putStrLn ""
+    traverse_ (putStrLn . showLambda) exprs
+    putStrLn ""
+    traverse_ (putStrLn . showHaskell) exprs
+#else
+    putStrLn $ mconcat ["MACRO: ", show (length defs)]
+    putStrLn $ mconcat ["EXPRESSION: ", show (length exprs)]
+#endif
+    putStrLn ""
 
-betaReduction :: [NamedTerm] -> [Term] -> IO ()
-betaReduction defs exprs = do
+    -- [マクロの展開]
+    -- "c1" を (\f.(\x.f(x)) に置換
+    let eExprs = map (extract defs []) exprs
 
-    let !_ = trace (concat ["!!!!!!!!!!!!!!!! 1"]) 1
+    -- [α変換]
+    -- (\f.(\x.(f(x)))) を (\f{1}.(\x{2}.f{1}(x{2}))) に書き換え
+    let (aExprs, _) = MS.runState (traverse (alpha []) eExprs) 0
 
-    for_ (zip [1..] exprs) $ \(n, expr) -> do
+#if defined DEBUG
+    debugPrint2 "alpha" aExprs
 
-        let (expr', hist) = MR.runReader (MW.runWriterT (repeatWhileChanging expr)) defs
-        putStrLn $ concat ["NO=", show n, ") INPUT=", show expr]
-        print expr'
-        putStrLn $ showLambda expr'
-        traverse (putStrLn . showLambda) hist
-        putStrLn "."
+    -- beta
 
+    debugPrint21 "beta"
+#endif
 
-    let !_ = trace (concat ["!!!!!!!!!!!!!!!! 2"]) 1
+    {- [β簡約]
+       (\f{1}.(\x{2}.f{1}(x{2}))) A B のとき
 
+        --> (\f{1}.(\x{2}.f{1}(x{2}))) A B
+        --> (A.(\x{2}.A(x{2}))) B
+        --> (\x{2}.A(x{2})) B
+        --> (B.A(B))
+        --> A(B)
 
-    putStrLn "done."
+        のように引数を関数に適用していく
+    -}
+    for_ (zip [0..] aExprs) $ \(i, aExpr) -> do
+        -- (最終形, [途中経過])
+        let (bExpr, bExprs) = MW.runWriter (repeatWhileChanging aExpr)
 
+        putStrLn $ mconcat [replicate 10 '-', " EXPRESSION[", show (i + 1), "] ", replicate 10 '-']
 
---
+        putStrLn "# INPUT"
+        putStrLn $ mconcat ["TEXT: ", showLambda (exprs !! i)]
+        putStrLn ""
 
-beta :: Term -> MW.WriterT [Term] (MR.Reader [NamedTerm]) Term
+        putStrLn $ mconcat ["LAMBDA: ", showLambda (aExprs !! i)]
+        putStrLn ""
 
-beta (Macro key) = do
-    -- "c1"
+        putStrLn $ mconcat ["LAMBDA(α): ", showLambdaA (aExprs !! i)]
+        putStrLn ""
 
-    db <- lift MR.ask
+        putStrLn "# BETA REDUCTION"
+        traverse_ (\(j, l) -> putStrLn $ mconcat ["{", show j, "} ", showLambda l]) $ zip [1..] bExprs
 
-    case lookup key db of
-        Nothing -> error $ concat ["macro not found: key=", key]
-        Just x -> return x
+        putStrLn ""
 
+        putStrLn "# OUTPUT"
+        putStrLn $ mconcat ["LAMBDA: ", showLambda bExpr]
+        putStrLn ""
 
-beta org@(App lt rt) = do
+        putStrLn $ mconcat ["LAMBDA(α): ", showLambdaA bExpr]
+        putStrLn ""
 
-    case lt of
-        Macro _ -> do
-            -- "succ c0"
-            lt' <- beta lt
+        putStrLn $ mconcat ["Haskell: ", showHaskell bExpr]
+        putStrLn ""
 
-            return $ App lt' rt
+        putStrLn . intercalate "\n" . catMaybes $ sequenceA
+            [withT "Church Numericals" <=< toChurchNum
+            ,withT "Church Booleans"   <=< toChurchBool] bExpr
 
-        Fun bnd body -> do
-            -- "(\n. (\f. ...)) c0"
-
-            return $ repBody bnd rt body
-
-        Bnd _ -> do
-            -- "f ((c0 f) x"
-            rt' <- beta rt
-
-            return $ App lt rt'
-
-        App _ _ -> do
-            -- "((c0 f) x)"
-            lt' <- beta lt
-
-            return $ App lt' rt
-
-
-        _ -> do
-            error $ concat ["un expected: ", show org, "\n", showLambda org]
-
-
-beta org@(Fun bnd body) = do
-    -- "(\n. (\f. ...))"
-
-    body' <- beta body
-
-    return $ Fun bnd body'
-
-
-beta org@(Bnd key) = do
-
-    return org
-
-
-
-beta org = do
-    error $ concat ["un expected: ", show org, "\n", showLambda org]
-
---
-repBody :: String -> Term -> Term -> Term
-
-repBody srch val (App lt rt) =
-    App (repBody srch val lt) (repBody srch val rt)
-
-repBody srch val (Fun bnd body) = Fun bnd (repBody srch val body)
-
-repBody srch val (Bnd key)
-    | srch == key = val
-
-repBody _ _ org = org
-
---
-
-repeatWhileChanging :: Term -> MW.WriterT [Term] (MR.Reader [NamedTerm]) Term
-
-repeatWhileChanging aExpr = do
-    bExpr <- beta aExpr
-
-    if aExpr == bExpr then do
-        return bExpr
-
-        else do
-            MW.tell [bExpr]
-
-            repeatWhileChanging bExpr
-
---
-
-alphaConversion :: [NamedTerm] -> [Term] -> MS.StateT Int (MR.Reader [String]) ([NamedTerm], [Term])
-alphaConversion defs exprs = do
-
-    defs' <- traverse (\(name, term) -> (name, ) <$> alpha term) defs
-    exprs' <- traverse alpha exprs
-
-    return (defs', exprs')
-
+        putStrLn ""
 
 
 -- 出力補助
@@ -315,12 +265,10 @@ cntBndf _ _ org = Nothing
 pPrint :: Show a => a -> IO ()
 pPrint = putStrLn . ppShow
 
-debugPrint :: String -> [NamedTerm] -> [Term] -> IO ()
 debugPrint t a b = do
     debugPrint1 t a
     debugPrint2 t b
 
-debugPrint1 :: String -> [NamedTerm] -> IO ()
 debugPrint1 t a = do
     putStrLn $ "---------- " ++ t ++ " define ----------"
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> show . snd)) a
@@ -330,7 +278,6 @@ debugPrint1 t a = do
     traverse_ (putStrLn . ((\k v -> k ++ ": " ++ v) <$> fst <*> showHaskell . snd)) a
     putStrLn ""
 
-debugPrint2 :: String -> [Term] -> IO ()
 debugPrint2 t b = do
     debugPrint21 t
     debugPrint22 t b
@@ -358,14 +305,19 @@ debugPrint22 t b = do
     引数がある関数適用 ((\x. M) N) の場合は関数本体 M 中の x を N に置き換えし
     引数のない関数の場合は、本体 M を再帰的に簡約する
 -}
+beta :: Term -> Term
 
--- beta :: App
+-- (\x. M) N の場合は M 中に含まれる x (ex. Bnd "f{15}") を N に置き換え
+beta (App lt@(Fun bnd body) rt) = repBody bnd (beta rt) (beta body)
 
+-- (M N) の場合は両方を簡約
+beta (App lt rt) = App (beta lt) (beta rt)
 
+-- (\x. M) の場合は M を簡約
+beta (Fun bnd body) = Fun bnd (beta body)
 
-
-
-{-
+-- それ以外は変化なし
+beta org = org
 
 
 -- 関数本体中の Bnd "f{15}" を再帰的に val で置き換え
@@ -396,8 +348,6 @@ repeatWhileChanging aExpr = do
 
             repeatWhileChanging bExpr
 
--}
-
 
 -- #--------------------------------------------------------------------------
 -- #
@@ -406,35 +356,44 @@ repeatWhileChanging aExpr = do
 -- #--------------------------------------------------------------------------
 
 -- 関数の引数 (ex. "f") を一意の名前 (ex. "f{15}") に置換
-alpha = alpha0 []
+alpha :: [(String, String)] -> Term -> MS.State Int Term
 
-alpha0 :: [(String, String)] -> Term -> MS.StateT Int (MR.Reader [String]) Term
+alpha db (App lt rt) = App <$> alpha db lt <*> alpha db rt
 
-alpha0 bnds (App lt rt) = App <$> alpha0 bnds lt <*> alpha0 bnds rt
-
-alpha0 bnds (Fun bnd body) = do
+alpha db (Fun bnd body) = do
     newId <- genId
 
     let bnd' = bnd ++ ('{' : (show newId ++ "}"))
-    let bnds' = (bnd, bnd'):bnds
+    let db' = (bnd, bnd'):db
 
     -- 関数本体中の Var "f" を Bnd "f{15}" に(再帰的)置換
-    Fun bnd' <$> alpha0 bnds' body
+    Fun bnd' <$> alpha db' body
 
---alpha0 bnds org@(Var key) = return . maybe (Label key) Bnd $ lookup key bnds
-
-alpha0 bnds org@(Var key) = do
-    defkeys <- lift MR.ask
-
-    return $ case lookup key bnds of
-                Just key' -> Bnd key'
-                Nothing -> if key `elem` defkeys then Macro key else Label key
-
-
+alpha db org@(Var key) = return . maybe org Bnd $ lookup key db
 
 --
-genId :: Monad m => MS.StateT Int m Int
+genId :: MS.State Int Int
 genId = MS.modify (+1) >> MS.get
+
+
+-- #--------------------------------------------------------------------------
+-- #
+-- #        extract macro
+-- #
+-- #--------------------------------------------------------------------------
+
+-- plus, const などのマクロ定義を実際の関数に置換
+extract :: [(String, Term)] -> [String] -> Term -> Term
+
+extract db bnds (App lt rt) = App (extract db bnds lt) (extract db bnds rt)
+
+extract db bnds (Fun bnd body) = Fun bnd (extract db (bnd:bnds) body)
+
+--extract db bnds org@(Var key) = maybe org (extract db) $ lookup key db
+extract db bnds org@(Var key) =
+    -- 引数名の場合はマクロ展開対象外
+    if elem key bnds then org else
+        maybe org (extract db bnds) $ lookup key db
 
 
 -- #--------------------------------------------------------------------------
@@ -641,7 +600,7 @@ eval1 :: String -> Term
 eval1 cs = do
     let input = intercalate "\r\n" (cs:testMacros)
     let (Right stmts) = P.parse parser "(src)" input
-    let (Right (defs, exprs)) = stmtsToExprs stmts
+    let (Right (defs, exprs)) = toExprs stmts
     let eExprs = map (extract defs []) exprs
     let aExprs = MS.evalState (traverse (alpha []) eExprs) 0
     let bExprs = map (evalWriter . repeatWhileChanging) aExprs
